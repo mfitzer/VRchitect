@@ -3,20 +3,22 @@ Cmd: initializeCompiler
 Cmd: initializeCompiler
 Cmd: initializeCompiler
 Cmd: initializeCompiler
-Cmd: initializeCompiler
-Cmd: initializeCompiler
-Cmd: initializeCompiler
-Cmd: initializeCompiler
-Cmd: initializeCompiler
-Cmd: initializeCompiler
-Cmd: initializeCompiler
-Cmd: initializeCompiler
-Cmd: initializeCompiler
-Cmd: initializeCompiler
-Cmd: initializeCompiler
-Cmd: initializeCompiler
-Cmd: initializeCompiler
-Cmd: initializeCompiler
+Cmd: preprocess
+  insize=1449 outsize=743 ok=1
+Cmd: preprocess
+  insize=1607 outsize=901 ok=1
+Cmd: preprocess
+  insize=1562 outsize=785 ok=1
+Cmd: preprocess
+  insize=833 outsize=408 ok=1
+Cmd: preprocess
+  insize=1449 outsize=743 ok=1
+Cmd: preprocess
+  insize=1607 outsize=901 ok=1
+Cmd: preprocess
+  insize=1562 outsize=785 ok=1
+Cmd: preprocess
+  insize=833 outsize=408 ok=1
 Cmd: initializeCompiler
 Cmd: initializeCompiler
 Cmd: initializeCompiler

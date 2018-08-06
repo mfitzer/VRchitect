@@ -112,11 +112,9 @@
     <None Include="Assets\SteamVR\Resources\SteamVR_Fade.shader" />
     <None Include="Assets\SteamVR\Resources\SteamVR_ClearAll.shader" />
     <None Include="Assets\Imports\Vive-Teleporter\Shader\ViveMovementBorder.shader" />
-    <None Include="Assets\Imports\Vive-Teleporter\LICENSE.txt" />
     <None Include="Assets\Imports\Vive-Teleporter\Shader\TransparentNoOverlap.shader" />
     <None Include="Assets\Imports\Vive-Teleporter\Shader\ViveMovementGrid.shader" />
-    <None Include="Assets\Imports\Vive-Teleporter\Assets\Vive-Teleporter\LICENSE.txt" />
-    <None Include="Assets\Imports\Vive-Teleporter\ProjectSettings\ProjectVersion.txt" />
+    <None Include="Assets\Imports\Vive-Teleporter\LICENSE.txt" />
     <None Include="Assets\Imports\Vive-Teleporter\Shader\FadeBlack.shader" />
     <None Include="Assets\Imports\Vive-Teleporter\README.txt" />
     <None Include="Assets\SteamVR\Resources\SteamVR_SphericalProjection.shader" />
