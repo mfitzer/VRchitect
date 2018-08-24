@@ -17,6 +17,10 @@ public class EditTracker : MonoBehaviour {
         public Vector3 oldVector;
         public Vector3 newVector;
 
+        public Vector3 position;
+        public Vector3 rotation;
+        public Vector3 scale;
+
         public string formatAsString() //Returns a formatted string version of an edit
         {
             return "Edit Type: " + editType + "  Transform Edited: " + transformEdited.name + "  Old Vector: " + oldVector + "  New Vector: " + newVector;
@@ -37,7 +41,7 @@ public class EditTracker : MonoBehaviour {
     }
 
     //Goes back one edit in pastEdits (Returns true if an edit was undone, false otherwise)
-    public bool undo()
+    public Transform undo()
     {
         if (pastEdits.Count > 0) //There are edits to undo
         {
@@ -45,18 +49,16 @@ public class EditTracker : MonoBehaviour {
             performEdit(edit, edit.oldVector);
             futureEdits.Push(edit); //Make edit available for redoing
 
-            //Debug.Log("Undo edit: " + edit.formatAsString());
-
-            return true;
+            return edit.transformEdited;
         }
         else
         {
-            return false;
+            return null;
         }
     }
 
     //Goes forward one edit in futureEdits (Returns true if an edit was redone, false otherwise)
-    public bool redo()
+    public Transform redo()
     {
         if (futureEdits.Count > 0) //There are edits to redo
         {
@@ -64,13 +66,11 @@ public class EditTracker : MonoBehaviour {
             performEdit(edit, edit.newVector);
             pastEdits.Push(edit); //Make edit available for redoing
 
-            //Debug.Log("Redo edit: " + edit.formatAsString());
-
-            return true;
+            return edit.transformEdited;
         }
         else
         {
-            return false;
+            return null;
         }
     }
 
@@ -82,6 +82,11 @@ public class EditTracker : MonoBehaviour {
         edit.transformEdited = transformEdited;
         edit.oldVector = oldVector;
         edit.newVector = newVector;
+
+        edit.position = transformEdited.position;
+        edit.rotation = transformEdited.rotation.eulerAngles;
+        edit.scale = transformEdited.localScale;
+
         return edit;
     }
 
@@ -94,11 +99,17 @@ public class EditTracker : MonoBehaviour {
         {
             case EditType.Translation:
                 transformEditing.position = editedVector;
+                transformEditing.rotation = Quaternion.Euler(edit.rotation);
+                transformEditing.localScale = edit.scale;
                 break;
             case EditType.Rotation:
+                transformEditing.position = edit.position;
                 transformEditing.rotation = Quaternion.Euler(editedVector);
+                transformEditing.localScale = edit.scale;
                 break;
             case EditType.Scale:
+                transformEditing.position = edit.position;
+                transformEditing.rotation = Quaternion.Euler(edit.rotation);
                 transformEditing.localScale = editedVector;
                 break;
         }

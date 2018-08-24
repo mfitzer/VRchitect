@@ -19,7 +19,6 @@ public class InputManager : MonoBehaviour {
 
     //Class Interactions
     public InteractableEditor interactableEditor;
-    public EditTracker editTracker;
 
     void rightTriggerClicked(object sender, ClickedEventArgs e)
     {
@@ -124,11 +123,11 @@ public class InputManager : MonoBehaviour {
         
         if (xAxis < -0.5f) //Click left
         {
-            editTracker.undo();
+            interactableEditor.handleEditTrackerUndo();
         }
         else if (xAxis > 0.5f) //Click right
         {
-            editTracker.redo();
+            interactableEditor.handleEditTrackerRedo();
         }
         else //-0.5f < xAxis < 0.5f
         {

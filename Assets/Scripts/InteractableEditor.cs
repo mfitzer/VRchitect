@@ -59,6 +59,7 @@ public class InteractableEditor : MonoBehaviour {
 
         //Moving and activating transform tool to position of controller
         transformTool.position = transform.position;
+        transformTool.rotation = interactableEditing.rotation;
         transformTool.gameObject.SetActive(true);
     }
 
@@ -80,7 +81,10 @@ public class InteractableEditor : MonoBehaviour {
         interactableReady = getModelParent(interactable);
 
         Renderer interactableRenderer = interactableReady.GetComponent<Renderer>();
-        interactableMaterials.Add(interactableReady, interactableRenderer.material); //Store material of interactable
+        if (!interactableMaterials.ContainsKey(interactableReady))
+        {
+            interactableMaterials.Add(interactableReady, interactableRenderer.material); //Store material of interactable
+        }
         interactableRenderer.material = highlightedInteractable; //Highlight interactable
     }
 
@@ -109,12 +113,6 @@ public class InteractableEditor : MonoBehaviour {
                 transformEditorState = TransformEditorState.editing; //Adjust editor state
                 editTypeActive = EditTracker.EditType.Translation; //Track type of edit being performed
                 activeTranslator = translatorReady;
-
-                //Transform parent based translation
-                transformsEditing.Add(transformTool, transformTool.parent);
-                transformsEditing.Add(interactableEditing, interactableEditing.parent);
-                transformTool.parent = transform; //Make controller parent of transform tool
-                interactableEditing.parent = transformTool; //Make transform tool parent of controller
             }
 
             transformEditor.translate(transformTool, interactableEditing, activeTranslator);
@@ -126,7 +124,7 @@ public class InteractableEditor : MonoBehaviour {
     {
         if (transformEditorState.Equals(TransformEditorState.editing))
         {
-            transformEditor.stopTransforming();
+            transformEditor.stopTransforming(transformTool, interactableEditing);
             resetTransformParents(transformsEditing); //Reset transform parents
 
             transformEditorState = TransformEditorState.idle;
@@ -186,10 +184,6 @@ public class InteractableEditor : MonoBehaviour {
             activeRotator = rotatorReady;
 
             //Transform parent based translation
-            //transformsEditing.Add(transformTool, transformTool.parent);
-            //transformsEditing.Add(interactableEditing, interactableEditing.parent);
-            //transformTool.parent = transform; //Make controller parent of transform tool
-            //interactableEditing.parent = transformTool; //Make transform tool parent of controller
             transformEditor.rotate(transformTool, interactableEditing, activeRotator);
         }
     }
@@ -199,14 +193,14 @@ public class InteractableEditor : MonoBehaviour {
     {
         if (transformEditorState.Equals(TransformEditorState.editing))
         {
-            transformEditor.stopTransforming();
+            transformEditor.stopTransforming(transformTool, interactableEditing);
             //resetTransformParents(transformsEditing); //Reset transform parents
 
             transformEditorState = TransformEditorState.idle;
             activeRotator = null;
 
             resetMaterials(rotatorMaterials);
-            resetTransformTool(); //Reset transform tool's rotation
+            //resetTransformTool(); //Reset transform tool's rotation
         }
     }
 
@@ -249,6 +243,28 @@ public class InteractableEditor : MonoBehaviour {
     #endregion Rotators
 
     #region General Events
+
+    //Handles the event of an undo edit event
+    public void handleEditTrackerUndo()
+    {
+        Transform editedTransform = transformEditor.handleEditTrackerUndo();
+
+        if (editorState.Equals(EditorState.editing))
+        {
+            interactableEditing = editedTransform;
+        }
+    }
+
+    //Handles the event of an undo edit event
+    public void handleEditTrackerRedo()
+    {
+        Transform editedTransform = transformEditor.handleEditTrackerRedo();
+
+        if (editorState.Equals(EditorState.editing))
+        {
+            interactableEditing = editedTransform;
+        }
+    }
 
     //Used for indicating if the player is teleporting
     public void handleTeleportingEvent()
@@ -443,6 +459,9 @@ public class InteractableEditor : MonoBehaviour {
 
     // Update is called once per frame
     void Update () {
-        transformToolStats.text = "Rotation: " + transformTool.rotation.eulerAngles;
+        if (interactableEditing != null)
+        {
+            transformToolStats.text = "Position: " + interactableEditing.position + "\nLocal Position: " + interactableEditing.localPosition + "\nRotation: " + interactableEditing.rotation.eulerAngles + "\nLocal Rotation: " + interactableEditing.localRotation.eulerAngles;
+        }
     }
 }

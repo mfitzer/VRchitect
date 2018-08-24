@@ -6,49 +6,94 @@ public class TransformEditor : MonoBehaviour {
 
     public enum Axis { x, y, z } //Indicates an axis on a transform
 
-    EditTracker editTracker;
+    EditTracker transformEditingEditTracker; //Stores edits for transforms edited
+    EditTracker transformToolEditTracker; //Stores edits for transformTools
 
-    Transform transformEditing;
-    Vector3 initialEditVector; //Initial vector value for transform edit
-    Vector3 finalEditVector; //Final vector value for transform edit
+    Vector3 initialTransformEditingEditVector; //Initial vector value for transform edit
+    Vector3 finalTransformEditingEditVector; //Final vector value for transformEditing
+    Vector3 initialTransformToolEditVector; //Initial vector value for transformTool
+    Vector3 finalTransformToolEditVector; //Final vector value for transformToolEditVector
 
     //Transformation
     Transform targetTransform;
+    Vector3 initialControllerPosition; //Position of controller when translation is initiated in local space of transformEditing
     Vector3 initialPosition;
     Vector3 initialRotation;
     Axis targetAxis;
+    Vector3 targetAxisVector; //Holds a Vector3 representation of the targetAxis
     EditTracker.EditType editType;
     bool shouldTransform = false;
 
     //Rotation
+    Quaternion initialTransformEditingRotation;
+    Quaternion initialTransformToolRotation;
     Vector3 initialVectorToController;
-    Vector3 previousControllerPosition; //Position of the controller last frame
     Vector3 prevDirectionToRotateTo;
-    public float rotatorSensitivity = 1f; //Sensitivity of rotator tool
 
     // Use this for initialization
     void Start()
     {
-        editTracker = FindObjectOfType<EditTracker>();
+        transformEditingEditTracker = new EditTracker();
+        transformToolEditTracker = new EditTracker();
     }
 
     #region Translation
 
-    //Translates transformToMove on the x, y, or z axis; Stores transformToRecord for making and edit when the translation is done
-    public void translate(Transform transformToMove, Transform transformToRecord, Translator translator)
+    //Translates transformTool on the x, y, or z axis; Stores transformToRecord for making and edit when the translation is done
+    public void translate(Transform transformTool, Transform transformEditing, Translator translator)
     {
         if (!shouldTransform) //Not constraining the transform yet
         {
-            transformEditing = transformToRecord;
-            initialEditVector = transformEditing.position;
+            initialTransformEditingEditVector = transformEditing.position;
+            initialTransformToolEditVector = transformTool.position;
 
-            targetTransform = transformToMove;
-            initialPosition = transformToMove.position;
-            initialRotation = transformToMove.rotation.eulerAngles;
+            targetTransform = transformTool;
+
+            Vector3 transformEditingScale = transformEditing.localScale; //Store scale of transformEditing
+            transformEditing.localScale = Vector3.one; //Set the scale to 1 to avoid issues with InverseTransformPoint() being affected by scale
+            initialControllerPosition = transformEditing.InverseTransformPoint(transform.position);
+            transformEditing.localScale = transformEditingScale; //Reset the scale
+
+            initialPosition = transformTool.position;
+            initialRotation = transformTool.rotation.eulerAngles;
             targetAxis = translator.axis;
+            targetAxisVector = getVectorForAxis(targetAxis);
 
             editType = EditTracker.EditType.Translation;
             shouldTransform = true;
+        }
+        else //Ready to transform
+        {
+            Vector3 transformEditingScale = transformEditing.localScale; //Store scale of transformEditing
+            transformEditing.localScale = Vector3.one; //Set the scale to 1 to avoid issues with InverseTransformPoint() being affected by scale
+
+            Vector3 localSpaceControllerPosition = transformEditing.InverseTransformPoint(transform.position); //The position of the controller in the local space of transformEditing
+            float unitsToTranslate = 0f;
+
+            switch (targetAxis)
+            {
+                case Axis.x:
+                    unitsToTranslate = localSpaceControllerPosition.x - initialControllerPosition.x;
+                    break;
+                case Axis.y:
+                    unitsToTranslate = localSpaceControllerPosition.y - initialControllerPosition.y;
+                    break;
+                case Axis.z:
+                    unitsToTranslate = localSpaceControllerPosition.z - initialControllerPosition.z;
+                    break;
+            }
+
+            Vector3 translation = targetAxisVector * unitsToTranslate;
+            transformEditing.Translate(translation, Space.Self);
+            transformTool.Translate(translation); //Move transformTool with transformEditing
+
+            transformEditing.localScale = transformEditingScale; //Reset the scale
+
+            //Record final edit vectors for the EditTracker
+            finalTransformEditingEditVector = transformEditing.position;
+            finalTransformToolEditVector = transformTool.position;
+
+            Debug.Log("Translation on " + targetAxis + "-axis | Initial: " + initialControllerPosition + " | Current: " + localSpaceControllerPosition + " | Units: " + unitsToTranslate + " | translation: " + translation + " | new pos: " + transformEditing.position);
         }
     }
 
@@ -57,25 +102,44 @@ public class TransformEditor : MonoBehaviour {
     #region Rotation
 
     //Translates the given transform on the x, y, or z axis by following the 
-    public void rotate(Transform transformToMove, Transform transformToRecord, Rotator rotator)
+    public void rotate(Transform transformTool, Transform transformEditing, Rotator rotator)
     {
-
         if (!shouldTransform) //Not ready to rotate, need to setup variables
         {
-            transformEditing = transformToRecord;
-            initialEditVector = transformEditing.rotation.eulerAngles;
+            initialTransformEditingEditVector = transformEditing.rotation.eulerAngles;
+            initialTransformToolEditVector = transformTool.rotation.eulerAngles;
+
+            initialTransformEditingRotation = transformEditing.rotation;
+            initialTransformToolRotation = transformTool.rotation;
+
             targetAxis = rotator.axis;
+            targetAxisVector = getVectorForAxis(targetAxis);
             editType = EditTracker.EditType.Rotation;
+
             shouldTransform = true;
 
-            //Assuming this is attached to the controller: Vector between controller position and transformToMove position
-            initialVectorToController = get2DDirectionalVection(transformToMove.position, transform.position, targetAxis); //Record initial relationship between controller and transformTool
+            //Assuming this is attached to the controller: Vector between controller position and transformTool position
+            initialVectorToController = get2DDirectionalVector(transformTool.position, transform.position, targetAxis); //Record initial relationship between controller and transformTool
         }
         else //Ready to rotate
-        {            
-            Vector3 transformToolToDirection = get2DDirectionalVection(transformToMove.position, transform.position, targetAxis); //Assuming this is attached to the controller: Vector between controller position and transformToMove position
-            transformToMove.rotation = Quaternion.FromToRotation(initialVectorToController, transformToolToDirection);
-            finalEditVector = transformEditing.rotation.eulerAngles;
+        {
+            //Transform to Move
+            Vector3 transformToolToDirection = get2DDirectionalVector(transformTool.position, transform.position, targetAxis); //Assuming this is attached to the controller: Vector between controller position and transformTool position
+            //transformTool.rotation = initialTransformToolRotation * Quaternion.FromToRotation(initialVectorToController, transformToolToDirection);
+
+            //Transform Editing
+            float degreesToRotate = Vector3.SignedAngle(initialVectorToController, transformToolToDirection, targetAxisVector); //Number of degrees to rotate on the target axis
+            transformTool.rotation = initialTransformToolRotation * Quaternion.AngleAxis(degreesToRotate, targetAxisVector); //Rotate degreesToRotate around the target axis from transformTool's initial rotation
+            transformEditing.rotation = initialTransformEditingRotation * Quaternion.AngleAxis(degreesToRotate, targetAxisVector); //Rotate degreesToRotate around the target axis from transformEditing's initial rotation
+
+            //Vector3 initialRotationVector1 = initialTransformToolRotation.eulerAngles;
+            //Vector3 initialRotationVector2 = initialTransformEditingRotation.eulerAngles;
+            //transformTool.rotation = Quaternion.AngleAxis(initialRotationVector1.y, Vector3.up) * Quaternion.AngleAxis(initialRotationVector1.x, Vector3.right) * Quaternion.AngleAxis(degreesToRotate, targetAxisVector); //Rotate degreesToRotate around the target axis from transformTool's initial rotation
+            //transformEditing.rotation = Quaternion.AngleAxis(initialRotationVector2.y, Vector3.up) * Quaternion.AngleAxis(initialRotationVector2.x, Vector3.right) * Quaternion.AngleAxis(initialRotationVector2.z, Vector3.forward) * Quaternion.AngleAxis(degreesToRotate, targetAxisVector); //Rotate degreesToRotate around the target axis from transformEditing's initial rotation
+
+            //Record final edit vectors for the EditTracker
+            finalTransformEditingEditVector = transformEditing.rotation.eulerAngles;
+            finalTransformToolEditVector = transformTool.rotation.eulerAngles;
         }
     }
 
@@ -87,7 +151,7 @@ public class TransformEditor : MonoBehaviour {
         switch (editType)
         {
             case EditTracker.EditType.Translation:
-                constrainTransform(targetTransform, initialPosition, initialRotation, targetAxis, editType);
+
                 break;
             case EditTracker.EditType.Rotation:
 
@@ -100,48 +164,43 @@ public class TransformEditor : MonoBehaviour {
     //Contrains a transform's movement to a specific axis
     void constrainTransform(Transform transformToConstrain, Vector3 position, Vector3 rotation, Axis axis, EditTracker.EditType typeOfEdit)
     {
-        if (shouldTransform)
+        Vector3 newPosition = position;
+        Vector3 newRotation = rotation;
+
+        switch (targetAxis) //Assuming this script goes on the controller, match position and rotation of controller on the specified axis
         {
-            Vector3 newPosition = position;
-            Vector3 newRotation = rotation;
+            case Axis.x:
+                newPosition = new Vector3(transformToConstrain.position.x, position.y, position.z);
+                newRotation = new Vector3(transformToConstrain.rotation.eulerAngles.x, position.y, position.z);
+                break;
+            case Axis.y:
+                newPosition = new Vector3(position.x, transformToConstrain.position.y, position.z);
+                newRotation = new Vector3(position.x, transformToConstrain.rotation.eulerAngles.y, position.z);
+                break;
+            case Axis.z:
+                newPosition = new Vector3(position.x, initialPosition.y, transformToConstrain.position.z);
+                newRotation = new Vector3(position.x, initialPosition.y, transformToConstrain.rotation.eulerAngles.z);
+                break;
+        }
 
-            switch (targetAxis) //Assuming this script goes on the controller, match position and rotation of controller on the specified axis
-            {
-                case Axis.x:
-                    newPosition = new Vector3(transformToConstrain.position.x, position.y, position.z);
-                    newRotation = new Vector3(transformToConstrain.rotation.eulerAngles.x, position.y, position.z);
-                    break;
-                case Axis.y:
-                    newPosition = new Vector3(position.x, transformToConstrain.position.y, position.z);
-                    newRotation = new Vector3(position.x, transformToConstrain.rotation.eulerAngles.y, position.z);
-                    break;
-                case Axis.z:
-                    newPosition = new Vector3(position.x, initialPosition.y, transformToConstrain.position.z);
-                    newRotation = new Vector3(position.x, initialPosition.y, transformToConstrain.rotation.eulerAngles.z);
-                    break;
-            }
-
-            switch (typeOfEdit) //Determine type of edit being made
-            {
-                case EditTracker.EditType.Translation:
-                    transformToConstrain.position = newPosition;
-                    transformToConstrain.rotation = Quaternion.Euler(rotation);
-                    finalEditVector = transformEditing.position; //Track position of transformEditing in case the transformation is done
-                    break;
-                //case EditTracker.EditType.Rotation:
-                //    transformToConstrain.position = position;
-                //    transformToConstrain.rotation = Quaternion.Euler(newRotation);
-                //    finalEditVector = transformEditing.rotation.eulerAngles; //Track rotation of transformEditing in case the transformation is done
-                //    break;
-            }
+        switch (typeOfEdit) //Determine type of edit being made
+        {
+            case EditTracker.EditType.Translation:
+                transformToConstrain.position = newPosition;
+                transformToConstrain.rotation = Quaternion.Euler(rotation);
+                finalTransformEditingEditVector = transformToConstrain.position; //Track position of transformEditing in case the transformation is done
+                break;
         }
     }
 
     //Sets a flag that indicates that transformation should stop
-    public void stopTransforming()
+    public void stopTransforming(Transform transformTool, Transform transformEditing)
     {
         shouldTransform = false;
-        editTracker.makeEdit(editType, transformEditing, initialEditVector, finalEditVector); //Record edit info
+
+        //Record edit info
+        transformEditingEditTracker.makeEdit(editType, transformEditing, initialTransformEditingEditVector, finalTransformEditingEditVector);
+        transformToolEditTracker.makeEdit(editType, transformTool, initialTransformToolEditVector, finalTransformToolEditVector);
     }
 
     #region Helpers
@@ -153,7 +212,7 @@ public class TransformEditor : MonoBehaviour {
     }
 
     //Returns a 2D vector from origin to positionLookingAt in the 2D plane excluding the given axis
-    Vector3 get2DDirectionalVection(Vector3 origin, Vector3 positionLookingAt, Axis axisToZeroOut)
+    Vector3 get2DDirectionalVector(Vector3 origin, Vector3 positionLookingAt, Axis axisToZeroOut)
     {
         switch (axisToZeroOut)
         {
@@ -172,6 +231,24 @@ public class TransformEditor : MonoBehaviour {
     }
 
     #endregion Helpers
+
+    #region General Events
+
+    //Handles the event of an undo edit event
+    public Transform handleEditTrackerUndo()
+    {
+        transformToolEditTracker.undo();
+        return transformEditingEditTracker.undo();
+    }
+
+    //Handles the event of an undo edit event
+    public Transform handleEditTrackerRedo()
+    {
+        transformToolEditTracker.redo();
+        return transformEditingEditTracker.redo();
+    }
+
+    #endregion General Events
 
     private void FixedUpdate()
     {
