@@ -5,10 +5,8 @@ using UnityEngine;
 public class InteractableEditor : MonoBehaviour {
 
     public enum EditorState { idle, ready, editing }
-    internal EditorState editorState = EditorState.idle;
-
-    public enum TransformEditorState { idle, ready, editing }
-    internal TransformEditorState transformEditorState = TransformEditorState.idle;
+    internal EditorState interactableEditorState = EditorState.idle;
+    internal EditorState transformEditorState = EditorState.idle;
 
     EditTracker.EditType editTypeReady; //Type of edit corresponding to the highlighted part of the transform tool
     EditTracker.EditType editTypeActive; //Type of edit corresponding to the edit currently being performed
@@ -25,8 +23,6 @@ public class InteractableEditor : MonoBehaviour {
     Quaternion transformToolInitialRotation; //Default rotation of transform tool
     public Material highlightedTransformer; //Material that highlights transformers in the transform tool when it is interacting with the controller
 
-    Dictionary<Transform, Transform> transformsEditing = new Dictionary<Transform, Transform>(); //Transforms who need to be reassigned to their parents when they're done being edited
-
     //Translators
     Translator translatorReady;
     Translator activeTranslator;
@@ -37,7 +33,10 @@ public class InteractableEditor : MonoBehaviour {
     Rotator activeRotator;
     Dictionary<Transform, Material> rotatorMaterials = new Dictionary<Transform, Material>(); //Materials of the currently highlighted rotators
 
-    // Use this for initialization
+    //Testing Only
+    public TextMesh transformToolStats;
+
+    // Use this for initializatio
     void Start () {
         transformEditor = FindObjectOfType<TransformEditor>();
         transformTool.gameObject.SetActive(false);
@@ -50,7 +49,7 @@ public class InteractableEditor : MonoBehaviour {
     public void selectInteractable()
     {
         Debug.Log("Selected: " + interactableReady);
-        editorState = EditorState.editing; //Change editorState
+        interactableEditorState = EditorState.editing; //Change interactableEditorState
 
         //Get transform of interactable being edited
         resetMaterials(interactableMaterials); //Reset material
@@ -66,9 +65,9 @@ public class InteractableEditor : MonoBehaviour {
     //Deselects the interactable
     public void deselectInteractable()
     {
-        if (editorState.Equals(EditorState.editing)) //Controller is colliding with an interactable
+        if (interactableEditorState.Equals(EditorState.editing) && !transformEditorState.Equals(EditorState.editing)) //Controller is colliding with an interactable
         {
-            editorState = EditorState.idle; //Reset editorState
+            interactableEditorState = EditorState.idle; //Reset interactableEditorState
             interactableEditing = null; //Remove reference to the selected transform
             transformTool.gameObject.SetActive(false); //Hide transform tool
         }
@@ -77,23 +76,26 @@ public class InteractableEditor : MonoBehaviour {
     //Handles when the controller enters an interactable
     void interactableEntered(Transform interactable)
     {
-        editorState = EditorState.ready;
-        interactableReady = getModelParent(interactable);
-
-        Renderer interactableRenderer = interactableReady.GetComponent<Renderer>();
-        if (!interactableMaterials.ContainsKey(interactableReady))
+        if (!interactableEditorState.Equals(EditorState.editing))
         {
-            interactableMaterials.Add(interactableReady, interactableRenderer.material); //Store material of interactable
+            interactableEditorState = EditorState.ready;
+            interactableReady = getModelParent(interactable);
+
+            Renderer interactableRenderer = interactableReady.GetComponent<Renderer>();
+            if (!interactableMaterials.ContainsKey(interactableReady))
+            {
+                interactableMaterials.Add(interactableReady, interactableRenderer.material); //Store material of interactable
+            }
+            interactableRenderer.material = highlightedInteractable; //Highlight interactable
         }
-        interactableRenderer.material = highlightedInteractable; //Highlight interactable
     }
 
     //Handles when the controller leaves an interactable
     void interactableExited()
     {
-        if (!editorState.Equals(EditorState.editing))
+        if (!interactableEditorState.Equals(EditorState.editing))
         {
-            editorState = EditorState.idle;
+            interactableEditorState = EditorState.idle;
         }
 
         resetMaterials(interactableMaterials); //Reset material
@@ -106,11 +108,11 @@ public class InteractableEditor : MonoBehaviour {
     //Handles the selection of a translator
     void dragTranslator()
     {
-        if (!transformEditorState.Equals(TransformEditorState.idle)) //A translator is colliding with the controller
+        if (!transformEditorState.Equals(EditorState.idle)) //A translator is colliding with the controller
         {
-            if (!transformEditorState.Equals(TransformEditorState.editing))
+            if (!transformEditorState.Equals(EditorState.editing))
             {
-                transformEditorState = TransformEditorState.editing; //Adjust editor state
+                transformEditorState = EditorState.editing; //Adjust editor state
                 editTypeActive = EditTracker.EditType.Translation; //Track type of edit being performed
                 activeTranslator = translatorReady;
             }
@@ -122,12 +124,11 @@ public class InteractableEditor : MonoBehaviour {
     //Handles the deselection of a translator
     void releaseTranslator()
     {
-        if (transformEditorState.Equals(TransformEditorState.editing))
+        if (transformEditorState.Equals(EditorState.editing))
         {
             transformEditor.stopTransforming(transformTool, interactableEditing);
-            resetTransformParents(transformsEditing); //Reset transform parents
 
-            transformEditorState = TransformEditorState.idle;
+            transformEditorState = EditorState.idle;
             activeTranslator = null;
 
             resetMaterials(translatorMaterials);
@@ -137,24 +138,27 @@ public class InteractableEditor : MonoBehaviour {
     //Handles when the controller enters a Translator
     void translatorEntered(Collider other)
     {
-        Translator translator = other.GetComponent<TranslatorPart>().translator;
-        editTypeReady = EditTracker.EditType.Translation; //Track type of edit that's ready
-
-        if (transformEditorState.Equals(TransformEditorState.idle))
+        if (!transformEditorState.Equals(EditorState.editing))
         {
-            transformEditorState = TransformEditorState.ready;
-            translatorReady = translator;
+            Translator translator = other.GetComponent<TranslatorPart>().translator;
+            editTypeReady = EditTracker.EditType.Translation; //Track type of edit that's ready
 
-            resetMaterials(translatorMaterials); //Reset materials of previous translator
-            setMaterialOfChildren(translator.transform, translatorMaterials, highlightedTransformer);
-        }
-        else if (transformEditorState.Equals(TransformEditorState.ready))
-        {
-            if (translatorReady != translator) //New translator
+            if (transformEditorState.Equals(EditorState.idle))
             {
-                resetMaterials(translatorMaterials); //Reset materials of previous translator
-                setMaterialOfChildren(translator.transform, translatorMaterials, highlightedTransformer); //Set material of active translator
+                transformEditorState = EditorState.ready;
                 translatorReady = translator;
+
+                resetMaterials(translatorMaterials); //Reset materials of previous translator
+                setMaterialOfChildren(translator.transform, translatorMaterials, highlightedTransformer);
+            }
+            else if (transformEditorState.Equals(EditorState.ready))
+            {
+                if (translatorReady != translator) //New translator
+                {
+                    resetMaterials(translatorMaterials); //Reset materials of previous translator
+                    setMaterialOfChildren(translator.transform, translatorMaterials, highlightedTransformer); //Set material of active translator
+                    translatorReady = translator;
+                }
             }
         }
     }
@@ -162,9 +166,9 @@ public class InteractableEditor : MonoBehaviour {
     //Handles when the controller exits a Translator
     void translatorExited(Collider other)
     {
-        if (!transformEditorState.Equals(TransformEditorState.editing))
+        if (!transformEditorState.Equals(EditorState.editing))
         {
-            transformEditorState = TransformEditorState.idle;
+            transformEditorState = EditorState.idle;
             translatorReady = null;
             resetMaterials(translatorMaterials);
         }
@@ -177,9 +181,9 @@ public class InteractableEditor : MonoBehaviour {
     //Handles the selection of a Rotator
     void dragRotator()
     {
-        if (!transformEditorState.Equals(TransformEditorState.idle)) //A Rotator is colliding with the controller
+        if (!transformEditorState.Equals(EditorState.idle)) //A Rotator is colliding with the controller
         {
-            transformEditorState = TransformEditorState.editing; //Adjust editor state
+            transformEditorState = EditorState.editing; //Adjust editor state
             editTypeActive = EditTracker.EditType.Rotation; //Track type of edit being performed
             activeRotator = rotatorReady;
 
@@ -191,12 +195,11 @@ public class InteractableEditor : MonoBehaviour {
     //Handles the deselection of a Rotator
     void releaseRotator()
     {
-        if (transformEditorState.Equals(TransformEditorState.editing))
+        if (transformEditorState.Equals(EditorState.editing))
         {
             transformEditor.stopTransforming(transformTool, interactableEditing);
-            //resetTransformParents(transformsEditing); //Reset transform parents
 
-            transformEditorState = TransformEditorState.idle;
+            transformEditorState = EditorState.idle;
             activeRotator = null;
 
             resetMaterials(rotatorMaterials);
@@ -207,24 +210,27 @@ public class InteractableEditor : MonoBehaviour {
     //Handles when the controller enters a Rotator
     void rotatorEntered(Collider other)
     {
-        Rotator rotator = other.GetComponent<Rotator>();
-        editTypeReady = EditTracker.EditType.Rotation; //Track type of edit that's ready
-
-        if (transformEditorState.Equals(TransformEditorState.idle))
+        if (!transformEditorState.Equals(EditorState.editing))
         {
-            transformEditorState = TransformEditorState.ready;
-            rotatorReady = rotator;
+            Rotator rotator = other.GetComponent<Rotator>();
+            editTypeReady = EditTracker.EditType.Rotation; //Track type of edit that's ready
 
-            resetMaterials(rotatorMaterials); //Reset materials of previous Rotator
-            setMaterialOfChildren(rotator.transform, rotatorMaterials, highlightedTransformer);
-        }
-        else if (transformEditorState.Equals(TransformEditorState.ready))
-        {
-            if (rotatorReady != rotator) //New Rotator
+            if (transformEditorState.Equals(EditorState.idle))
             {
-                resetMaterials(rotatorMaterials); //Reset materials of previous Rotator
-                setMaterialOfChildren(rotator.transform, rotatorMaterials, highlightedTransformer); //Set material of active Rotator
+                transformEditorState = EditorState.ready;
                 rotatorReady = rotator;
+
+                resetMaterials(rotatorMaterials); //Reset materials of previous Rotator
+                setMaterialOfChildren(rotator.transform, rotatorMaterials, highlightedTransformer);
+            }
+            else if (transformEditorState.Equals(EditorState.ready))
+            {
+                if (rotatorReady != rotator) //New Rotator
+                {
+                    resetMaterials(rotatorMaterials); //Reset materials of previous Rotator
+                    setMaterialOfChildren(rotator.transform, rotatorMaterials, highlightedTransformer); //Set material of active Rotator
+                    rotatorReady = rotator;
+                }
             }
         }
     }
@@ -232,9 +238,9 @@ public class InteractableEditor : MonoBehaviour {
     //Handles when the controller exits a Rotator
     void rotatorExited(Collider other)
     {
-        if (!transformEditorState.Equals(TransformEditorState.editing))
+        if (!transformEditorState.Equals(EditorState.editing))
         {
-            transformEditorState = TransformEditorState.idle;
+            transformEditorState = EditorState.idle;
             rotatorReady = null;
             resetMaterials(rotatorMaterials);
         }
@@ -249,7 +255,7 @@ public class InteractableEditor : MonoBehaviour {
     {
         Transform editedTransform = transformEditor.handleEditTrackerUndo();
 
-        if (editorState.Equals(EditorState.editing))
+        if (interactableEditorState.Equals(EditorState.editing))
         {
             interactableEditing = editedTransform;
         }
@@ -260,7 +266,7 @@ public class InteractableEditor : MonoBehaviour {
     {
         Transform editedTransform = transformEditor.handleEditTrackerRedo();
 
-        if (editorState.Equals(EditorState.editing))
+        if (interactableEditorState.Equals(EditorState.editing))
         {
             interactableEditing = editedTransform;
         }
@@ -277,7 +283,7 @@ public class InteractableEditor : MonoBehaviour {
     //Handles the event of the controller trigger being pulled
     public void handleTriggerPulled()
     {
-        switch (editorState)
+        switch (interactableEditorState)
         {
             case (EditorState.ready):
                 selectInteractable();
@@ -288,24 +294,24 @@ public class InteractableEditor : MonoBehaviour {
     //Handles the event of the controller trigger being down
     public void handleTriggerDown()
     {
-        if (!transformEditorState.Equals(TransformEditorState.idle)) //Ready or editing
+        if (!transformEditorState.Equals(EditorState.idle)) //Ready or editing
         {
             switch (editTypeReady)
             {
                 case (EditTracker.EditType.Translation):
-                    if (transformEditorState.Equals(TransformEditorState.ready) || editTypeActive.Equals(EditTracker.EditType.Translation)) //If not ready, that means transformEditorState == editing
+                    if (transformEditorState.Equals(EditorState.ready) || editTypeActive.Equals(EditTracker.EditType.Translation)) //If not ready, that means transformEditorState == editing
                     {
                         dragTranslator();
                     }
                     break;
                 case (EditTracker.EditType.Rotation):
-                    if (transformEditorState.Equals(TransformEditorState.ready) || editTypeActive.Equals(EditTracker.EditType.Rotation)) //If not ready, that means transformEditorState == editing
+                    if (transformEditorState.Equals(EditorState.ready) || editTypeActive.Equals(EditTracker.EditType.Rotation)) //If not ready, that means transformEditorState == editing
                     {
                         dragRotator();
                     }
                     break;
                 case (EditTracker.EditType.Scale):
-                    //if (transformEditorState.Equals(TransformEditorState.ready) || editTypeActive.Equals(EditTracker.EditType.Scaler)) //If not ready, that means transformEditorState == editing
+                    //if (transformEditorState.Equals(EditorState.ready) || editTypeActive.Equals(EditTracker.EditType.Scaler)) //If not ready, that means transformEditorState == editing
                     //{
                     //    dragScaler();
                     //}
@@ -317,24 +323,24 @@ public class InteractableEditor : MonoBehaviour {
     //Handles the event of the controller trigger being down
     public void handleTriggerReachedUpPosition()
     {
-        if (transformEditorState.Equals(TransformEditorState.editing))
+        if (transformEditorState.Equals(EditorState.editing))
         {
             switch (editTypeReady)
             {
                 case (EditTracker.EditType.Translation):
-                    if (transformEditorState.Equals(TransformEditorState.editing) && editTypeActive.Equals(EditTracker.EditType.Translation)) //If performing translation, release translator
+                    if (transformEditorState.Equals(EditorState.editing) && editTypeActive.Equals(EditTracker.EditType.Translation)) //If performing translation, release translator
                     {
                         releaseTranslator();
                     }
                     break;
                 case (EditTracker.EditType.Rotation):
-                    if (transformEditorState.Equals(TransformEditorState.editing) && editTypeActive.Equals(EditTracker.EditType.Rotation)) //If performing rotation, release rotator
+                    if (transformEditorState.Equals(EditorState.editing) && editTypeActive.Equals(EditTracker.EditType.Rotation)) //If performing rotation, release rotator
                     {
                         releaseRotator();
                     }
                     break;
                 case (EditTracker.EditType.Scale):
-                    //if (transformEditorState.Equals(TransformEditorState.editing) && editTypeActive.Equals(EditTracker.EditType.Scaler)) //If performing scale, release scaler
+                    //if (transformEditorState.Equals(EditorState.editing) && editTypeActive.Equals(EditTracker.EditType.Scaler)) //If performing scale, release scaler
                     //{
                     //    releaseScaler();
                     //}
@@ -345,7 +351,7 @@ public class InteractableEditor : MonoBehaviour {
 
     private void OnTriggerEnter(Collider other)
     {
-        if (!editorState.Equals(EditorState.editing) && other.CompareTag("Interactable"))
+        if (other.CompareTag("Interactable"))
         {
             interactableEntered(other.transform);
         }
@@ -454,14 +460,17 @@ public class InteractableEditor : MonoBehaviour {
 
     #endregion Helpers
 
-
-    public TextMesh transformToolStats;
-
     // Update is called once per frame
     void Update () {
+        string editorStateStats = "InteractableEditorState: " + interactableEditorState + "\nTransformEditorState: " + transformEditorState;
         if (interactableEditing != null)
         {
-            transformToolStats.text = "Position: " + interactableEditing.position + "\nLocal Position: " + interactableEditing.localPosition + "\nRotation: " + interactableEditing.rotation.eulerAngles + "\nLocal Rotation: " + interactableEditing.localRotation.eulerAngles + "\nScale: " + interactableEditing.lossyScale + "\nLocal Scale: " + interactableEditing.localScale;
+            string transformStats = "Position: " + interactableEditing.position + "\nLocal Position: " + interactableEditing.localPosition + "\nRotation: " + interactableEditing.rotation.eulerAngles + "\nLocal Rotation: " + interactableEditing.localRotation.eulerAngles + "\nScale: " + interactableEditing.lossyScale + "\nLocal Scale: " + interactableEditing.localScale;
+            transformToolStats.text = transformStats + "\n" + editorStateStats;
+        }
+        else
+        {
+            transformToolStats.text = editorStateStats;
         }
     }
 }
