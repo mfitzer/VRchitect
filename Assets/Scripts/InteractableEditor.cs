@@ -461,7 +461,7 @@ public class InteractableEditor : MonoBehaviour {
     void Update () {
         if (interactableEditing != null)
         {
-            transformToolStats.text = "Position: " + interactableEditing.position + "\nLocal Position: " + interactableEditing.localPosition + "\nRotation: " + interactableEditing.rotation.eulerAngles + "\nLocal Rotation: " + interactableEditing.localRotation.eulerAngles;
+            transformToolStats.text = "Position: " + interactableEditing.position + "\nLocal Position: " + interactableEditing.localPosition + "\nRotation: " + interactableEditing.rotation.eulerAngles + "\nLocal Rotation: " + interactableEditing.localRotation.eulerAngles + "\nScale: " + interactableEditing.lossyScale + "\nLocal Scale: " + interactableEditing.localScale;
         }
     }
 }

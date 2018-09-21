@@ -21,6 +21,7 @@ public class TransformEditor : MonoBehaviour {
     Vector3 initialRotation;
     Axis targetAxis;
     Vector3 targetAxisVector; //Holds a Vector3 representation of the targetAxis
+    Vector3 worldTargetAxisVector; //Holds the targetAxisVector in the local space of the transformTool
     EditTracker.EditType editType;
     bool shouldTransform = false;
 
@@ -29,6 +30,10 @@ public class TransformEditor : MonoBehaviour {
     Quaternion initialTransformToolRotation;
     Vector3 initialVectorToController;
     Vector3 prevDirectionToRotateTo;
+
+    //Rendering
+    public LineRenderer initialVector;
+    public LineRenderer newVector;
 
     // Use this for initialization
     void Start()
@@ -114,28 +119,33 @@ public class TransformEditor : MonoBehaviour {
 
             targetAxis = rotator.axis;
             targetAxisVector = getVectorForAxis(targetAxis);
+            worldTargetAxisVector = transformTool.TransformVector(targetAxisVector);
             editType = EditTracker.EditType.Rotation;
 
             shouldTransform = true;
 
             //Assuming this is attached to the controller: Vector between controller position and transformTool position
-            initialVectorToController = get2DDirectionalVector(transformTool.position, transform.position, targetAxis); //Record initial relationship between controller and transformTool
+            initialVectorToController = Vector3.ProjectOnPlane(transform.position - transformTool.position, worldTargetAxisVector); //Record initial relationship between controller and transformTool
+
+            //Rotation line renderer
+            /*Vector3[] initialPositions = new Vector3[2] { transformTool.position, transformTool.position + initialVectorToController };
+            initialVector.SetPositions(initialPositions);*/
         }
         else //Ready to rotate
         {
-            //Transform to Move
-            Vector3 transformToolToDirection = get2DDirectionalVector(transformTool.position, transform.position, targetAxis); //Assuming this is attached to the controller: Vector between controller position and transformTool position
-            //transformTool.rotation = initialTransformToolRotation * Quaternion.FromToRotation(initialVectorToController, transformToolToDirection);
+            //Assuming this is attached to the controller: Vector between controller position and transformTool position
+            Vector3 newVectorToController = Vector3.ProjectOnPlane(transform.position - transformTool.position, worldTargetAxisVector); //The vector to the controller in the plane of rotation specified by the target axis
+
+            //Rotation line renderer
+            /*Vector3[] newPositions = new Vector3[2] { transformTool.position, transformTool.position + newVectorToController };
+            newVector.SetPositions(newPositions);*/
 
             //Transform Editing
-            float degreesToRotate = Vector3.SignedAngle(initialVectorToController, transformToolToDirection, targetAxisVector); //Number of degrees to rotate on the target axis
+            float degreesToRotate = Vector3.SignedAngle(initialVectorToController, newVectorToController, worldTargetAxisVector); //Number of degrees to rotate on the target axis
+
+            //Perform rotations
             transformTool.rotation = initialTransformToolRotation * Quaternion.AngleAxis(degreesToRotate, targetAxisVector); //Rotate degreesToRotate around the target axis from transformTool's initial rotation
             transformEditing.rotation = initialTransformEditingRotation * Quaternion.AngleAxis(degreesToRotate, targetAxisVector); //Rotate degreesToRotate around the target axis from transformEditing's initial rotation
-
-            //Vector3 initialRotationVector1 = initialTransformToolRotation.eulerAngles;
-            //Vector3 initialRotationVector2 = initialTransformEditingRotation.eulerAngles;
-            //transformTool.rotation = Quaternion.AngleAxis(initialRotationVector1.y, Vector3.up) * Quaternion.AngleAxis(initialRotationVector1.x, Vector3.right) * Quaternion.AngleAxis(degreesToRotate, targetAxisVector); //Rotate degreesToRotate around the target axis from transformTool's initial rotation
-            //transformEditing.rotation = Quaternion.AngleAxis(initialRotationVector2.y, Vector3.up) * Quaternion.AngleAxis(initialRotationVector2.x, Vector3.right) * Quaternion.AngleAxis(initialRotationVector2.z, Vector3.forward) * Quaternion.AngleAxis(degreesToRotate, targetAxisVector); //Rotate degreesToRotate around the target axis from transformEditing's initial rotation
 
             //Record final edit vectors for the EditTracker
             finalTransformEditingEditVector = transformEditing.rotation.eulerAngles;

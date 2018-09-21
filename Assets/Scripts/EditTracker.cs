@@ -114,9 +114,4 @@ public class EditTracker : MonoBehaviour {
                 break;
         }
     }
-
-    // Update is called once per frame
-    void Update () {
-
-	}
 }
