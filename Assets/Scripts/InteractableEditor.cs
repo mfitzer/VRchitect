@@ -33,8 +33,15 @@ public class InteractableEditor : MonoBehaviour {
     Rotator activeRotator;
     Dictionary<Transform, Material> rotatorMaterials = new Dictionary<Transform, Material>(); //Materials of the currently highlighted rotators
 
+    //Scaler
+    Scaler scalerReady;
+    Scaler activeScaler;
+    Dictionary<Transform, Material> scalerMaterials = new Dictionary<Transform, Material>(); //Materials of the currently highlighted scalers
+
+
     //Testing Only
     public TextMesh transformToolStats;
+
 
     // Use this for initializatio
     void Start () {
@@ -186,8 +193,7 @@ public class InteractableEditor : MonoBehaviour {
             transformEditorState = EditorState.editing; //Adjust editor state
             editTypeActive = EditTracker.EditType.Rotation; //Track type of edit being performed
             activeRotator = rotatorReady;
-
-            //Transform parent based translation
+            
             transformEditor.rotate(transformTool, interactableEditing, activeRotator);
         }
     }
@@ -247,6 +253,76 @@ public class InteractableEditor : MonoBehaviour {
     }
 
     #endregion Rotators
+
+    #region Scalers
+
+        //Handles the selection of a Scaler
+        void dragScaler()
+        {
+            if (!transformEditorState.Equals(EditorState.idle)) //A Scaler is colliding with the controller
+            {
+                transformEditorState = EditorState.editing; //Adjust editor state
+                editTypeActive = EditTracker.EditType.Scale; //Track type of edit being performed
+                activeScaler = scalerReady;
+            
+                transformEditor.scale(transformTool, interactableEditing, activeScaler);
+            }
+        }
+
+        //Handles the deselection of a Scaler
+        void releaseScaler()
+        {
+            if (transformEditorState.Equals(EditorState.editing))
+            {
+                transformEditor.stopTransforming(transformTool, interactableEditing);
+
+                transformEditorState = EditorState.idle;
+                activeScaler = null;
+
+                resetMaterials(scalerMaterials);
+            }
+        }
+
+        //Handles when the controller enters a Rotator
+        void scalerEntered(Collider other)
+        {
+            if (!transformEditorState.Equals(EditorState.editing))
+            {
+                Scaler scaler = other.GetComponent<ScalerPart>().scaler;
+                editTypeReady = EditTracker.EditType.Scale; //Track type of edit that's ready
+
+                if (transformEditorState.Equals(EditorState.idle))
+                {
+                    transformEditorState = EditorState.ready;
+                    scalerReady = scaler;
+
+                    resetMaterials(scalerMaterials); //Reset materials of previous Scaler
+                    setMaterialOfChildren(scaler.transform, scalerMaterials, highlightedTransformer);
+                }
+                else if (transformEditorState.Equals(EditorState.ready))
+                {
+                    if (scalerReady != scaler) //New Scaler
+                    {
+                        resetMaterials(scalerMaterials); //Reset materials of previous Scaler
+                        setMaterialOfChildren(scaler.transform, scalerMaterials, highlightedTransformer); //Set material of active Scaler
+                        scalerReady = scaler;
+                    }
+                }
+            }
+        }
+
+        //Handles when the controller exits a Rotator
+        void scalerExited(Collider other)
+        {
+            if (!transformEditorState.Equals(EditorState.editing))
+            {
+                transformEditorState = EditorState.idle;
+                scalerReady = null;
+                resetMaterials(scalerMaterials);
+            }
+        }
+
+    #endregion Scalers
 
     #region General Events
 
@@ -311,10 +387,10 @@ public class InteractableEditor : MonoBehaviour {
                     }
                     break;
                 case (EditTracker.EditType.Scale):
-                    //if (transformEditorState.Equals(EditorState.ready) || editTypeActive.Equals(EditTracker.EditType.Scaler)) //If not ready, that means transformEditorState == editing
-                    //{
-                    //    dragScaler();
-                    //}
+                    if (transformEditorState.Equals(EditorState.ready) || editTypeActive.Equals(EditTracker.EditType.Scale)) //If not ready, that means transformEditorState == editing
+                    {
+                        dragScaler();
+                    }
                     break;
             }
         }
@@ -340,10 +416,10 @@ public class InteractableEditor : MonoBehaviour {
                     }
                     break;
                 case (EditTracker.EditType.Scale):
-                    //if (transformEditorState.Equals(EditorState.editing) && editTypeActive.Equals(EditTracker.EditType.Scaler)) //If performing scale, release scaler
-                    //{
-                    //    releaseScaler();
-                    //}
+                    if (transformEditorState.Equals(EditorState.editing) && editTypeActive.Equals(EditTracker.EditType.Scale)) //If performing scale, release scaler
+                    {
+                        releaseScaler();
+                    }
                     break;
             }
         }
@@ -365,6 +441,11 @@ public class InteractableEditor : MonoBehaviour {
         {
             rotatorEntered(other);
         }
+
+        if (other.CompareTag("ScalerPart"))
+        {
+            scalerEntered(other);
+        }
     }
 
     private void OnTriggerExit(Collider other)
@@ -382,6 +463,11 @@ public class InteractableEditor : MonoBehaviour {
         if (other.CompareTag("Rotator"))
         {
             rotatorExited(other);
+        }
+
+        if (other.CompareTag("ScalerPart"))
+        {
+            scalerExited(other);
         }
     }
 

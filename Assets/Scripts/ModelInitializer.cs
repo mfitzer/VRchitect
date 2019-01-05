@@ -20,23 +20,48 @@ public class ModelInitializer : MonoBehaviour {
         foreach (Transform child in parent)
         {
             //Debug.Log(child.name);
-
-            if (child.GetComponent<Camera>() != null) //Remove any camera objects
+            if (child != parent)
             {
-                Destroy(child.gameObject);
-            }
-            else
-            {
-                child.gameObject.tag = "Interactable";
-                child.gameObject.AddComponent<MeshCollider>();
-
-                //NavMeshObstacle navObstacle = child.gameObject.AddComponent<NavMeshObstacle>();
-                //navObstacle.carving = true;
-                //navObstacle.carveOnlyStationary = true;
-
-                if (child.childCount > 0) //Process the child's children as well
+                if (child.GetComponent<Camera>() != null) //Remove any camera objects
                 {
-                    intializeModel(child);
+                    //Destroy(child.gameObject);
+                    child.GetComponent<Camera>().enabled = false;
+                }
+                else
+                {
+                    child.gameObject.tag = "Interactable";
+                    child.gameObject.AddComponent<MeshCollider>();
+
+                    //fixTextures(child.GetComponent<Renderer>());
+
+                    //NavMeshObstacle navObstacle = child.gameObject.AddComponent<NavMeshObstacle>();
+                    //navObstacle.carving = true;
+                    //navObstacle.carveOnlyStationary = true;
+
+                    if (child.childCount > 0) //Process the child's children as well
+                    {
+                        intializeModel(child);
+                    }
+                }
+            }
+        }
+    }
+
+    public void fixTextures(Renderer renderer)
+    {
+        if (renderer != null)
+        {
+            List<Material> meshMats = new List<Material>();
+            renderer.GetMaterials(meshMats);
+            //Debug.Log("Child materials: " + meshMats.Count);
+
+            foreach (Material mat in meshMats)
+            {
+                if (mat.mainTexture != null && mat.mainTexture.name != null)
+                {
+                    string texName = mat.mainTexture.name;
+                    //Debug.Log(texName);
+                    texName.Trim('@');
                 }
             }
         }

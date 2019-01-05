@@ -27,11 +27,6 @@ public class EditTracker : MonoBehaviour {
         }
     }
 
-    // Use this for initialization
-    void Start () {
-        
-	}
-
     //Makes a new edit and updates the past and future edits
     public void makeEdit(EditType editType, Transform transformEdited, Vector3 oldVector, Vector3 newVector)
     {

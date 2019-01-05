@@ -11,6 +11,8 @@ TagManager:
   - ModelParent
   - TranslatorPart
   - Rotator
+  - Scaler
+  - ScalerPart
   layers:
   - Default
   - TransparentFX

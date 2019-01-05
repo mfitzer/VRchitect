@@ -31,9 +31,8 @@ public class TransformEditor : MonoBehaviour {
     Vector3 initialVectorToController;
     Vector3 prevDirectionToRotateTo;
 
-    //Rendering
-    public LineRenderer initialVector;
-    public LineRenderer newVector;
+    //Scale
+    Vector3 initialTransformEditingScale;
 
     // Use this for initialization
     void Start()
@@ -126,19 +125,11 @@ public class TransformEditor : MonoBehaviour {
 
             //Assuming this is attached to the controller: Vector between controller position and transformTool position
             initialVectorToController = Vector3.ProjectOnPlane(transform.position - transformTool.position, worldTargetAxisVector); //Record initial relationship between controller and transformTool
-
-            //Rotation line renderer
-            /*Vector3[] initialPositions = new Vector3[2] { transformTool.position, transformTool.position + initialVectorToController };
-            initialVector.SetPositions(initialPositions);*/
         }
         else //Ready to rotate
         {
             //Assuming this is attached to the controller: Vector between controller position and transformTool position
             Vector3 newVectorToController = Vector3.ProjectOnPlane(transform.position - transformTool.position, worldTargetAxisVector); //The vector to the controller in the plane of rotation specified by the target axis
-
-            //Rotation line renderer
-            /*Vector3[] newPositions = new Vector3[2] { transformTool.position, transformTool.position + newVectorToController };
-            newVector.SetPositions(newPositions);*/
 
             //Transform Editing
             float degreesToRotate = Vector3.SignedAngle(initialVectorToController, newVectorToController, worldTargetAxisVector); //Number of degrees to rotate on the target axis
@@ -155,6 +146,59 @@ public class TransformEditor : MonoBehaviour {
 
     #endregion Rotation
 
+    #region Scale
+
+    public void scale(Transform transformTool, Transform transformEditing, Scaler scaler)
+    {
+        if (!shouldTransform) //Not ready to rotate, need to setup variables
+        {
+            initialTransformEditingEditVector = transformEditing.localScale;
+            initialTransformToolEditVector = transformTool.localScale;
+
+            initialTransformEditingScale = transformEditing.localScale;
+
+            Vector3 transformEditingScale = transformEditing.localScale; //Store scale of transformEditing
+            transformEditing.localScale = Vector3.one; //Set the scale to 1 to avoid issues with InverseTransformPoint() being affected by scale
+            initialControllerPosition = transformEditing.InverseTransformPoint(transform.position);
+            transformEditing.localScale = transformEditingScale; //Reset the scale
+
+            targetAxis = scaler.axis;
+            targetAxisVector = getVectorForAxis(targetAxis);
+            editType = EditTracker.EditType.Scale;
+
+            shouldTransform = true;
+        }
+        else //Ready to scale
+        {
+            Vector3 transformEditingScale = transformEditing.localScale; //Store scale of transformEditing
+            transformEditing.localScale = Vector3.one; //Set the scale to 1 to avoid issues with InverseTransformPoint() being affected by scale
+
+            Vector3 localSpaceControllerPosition = transformEditing.InverseTransformPoint(transform.position); //The position of the controller in the local space of transformEditing
+            float unitsToScale = 0f;
+
+            switch (targetAxis)
+            {
+                case Axis.x:
+                    unitsToScale = localSpaceControllerPosition.x - initialControllerPosition.x;
+                    break;
+                case Axis.y:
+                    unitsToScale = localSpaceControllerPosition.y - initialControllerPosition.y;
+                    break;
+                case Axis.z:
+                    unitsToScale = localSpaceControllerPosition.z - initialControllerPosition.z;
+                    break;
+            }
+
+            transformEditing.localScale = initialTransformEditingScale + targetAxisVector * unitsToScale;
+
+            //Record final edit vectors for the EditTracker
+            finalTransformEditingEditVector = transformEditing.localScale;
+            finalTransformToolEditVector = transformTool.localScale;
+        }
+    }
+
+    #endregion Scale
+
     //Performs the extra actions for the active transformation
     void performTransformation()
     {
@@ -167,6 +211,7 @@ public class TransformEditor : MonoBehaviour {
 
                 break;
             case EditTracker.EditType.Scale:
+
                 break;
         }
     }
@@ -210,7 +255,7 @@ public class TransformEditor : MonoBehaviour {
 
         //Record edit info
         transformEditingEditTracker.makeEdit(editType, transformEditing, initialTransformEditingEditVector, finalTransformEditingEditVector);
-        transformToolEditTracker.makeEdit(editType, transformTool, initialTransformToolEditVector, finalTransformToolEditVector);
+        transformToolEditTracker.makeEdit(editType, transformTool, initialTransformToolEditVector, initialTransformToolEditVector);
     }
 
     #region Helpers
