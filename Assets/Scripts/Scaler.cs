@@ -6,5 +6,6 @@ public class Scaler : MonoBehaviour
 {
 
     public TransformEditor.Axis axis;
+    public bool allAxisScaler = false;
 
 }

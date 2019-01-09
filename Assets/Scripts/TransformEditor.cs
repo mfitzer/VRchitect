@@ -175,21 +175,32 @@ public class TransformEditor : MonoBehaviour {
 
             Vector3 localSpaceControllerPosition = transformEditing.InverseTransformPoint(transform.position); //The position of the controller in the local space of transformEditing
             float unitsToScale = 0f;
+            Vector3 newScale = transformEditingScale;
 
-            switch (targetAxis)
+            if (scaler.allAxisScaler) //Scale on all axes
             {
-                case Axis.x:
-                    unitsToScale = localSpaceControllerPosition.x - initialControllerPosition.x;
-                    break;
-                case Axis.y:
-                    unitsToScale = localSpaceControllerPosition.y - initialControllerPosition.y;
-                    break;
-                case Axis.z:
-                    unitsToScale = localSpaceControllerPosition.z - initialControllerPosition.z;
-                    break;
+                unitsToScale = (localSpaceControllerPosition - initialControllerPosition).magnitude;
+                newScale = initialTransformEditingScale + Vector3.one * unitsToScale;
+            }
+            else //Scale on one axis
+            {
+                switch (targetAxis)
+                {
+                    case Axis.x:
+                        unitsToScale = localSpaceControllerPosition.x - initialControllerPosition.x;
+                        break;
+                    case Axis.y:
+                        unitsToScale = localSpaceControllerPosition.y - initialControllerPosition.y;
+                        break;
+                    case Axis.z:
+                        unitsToScale = localSpaceControllerPosition.z - initialControllerPosition.z;
+                        break;
+                }
+
+                newScale = initialTransformEditingScale + targetAxisVector * unitsToScale;
             }
 
-            transformEditing.localScale = initialTransformEditingScale + targetAxisVector * unitsToScale;
+            transformEditing.localScale = newScale;
 
             //Record final edit vectors for the EditTracker
             finalTransformEditingEditVector = transformEditing.localScale;

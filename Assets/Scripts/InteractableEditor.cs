@@ -288,7 +288,16 @@ public class InteractableEditor : MonoBehaviour {
         {
             if (!transformEditorState.Equals(EditorState.editing))
             {
-                Scaler scaler = other.GetComponent<ScalerPart>().scaler;
+                Scaler scaler;
+                if (other.CompareTag("Scaler"))
+                {
+                    scaler = other.GetComponent<Scaler>();
+                }
+                else
+                {
+                    scaler = other.GetComponent<ScalerPart>().scaler;
+                }
+
                 editTypeReady = EditTracker.EditType.Scale; //Track type of edit that's ready
 
                 if (transformEditorState.Equals(EditorState.idle))
@@ -442,7 +451,7 @@ public class InteractableEditor : MonoBehaviour {
             rotatorEntered(other);
         }
 
-        if (other.CompareTag("ScalerPart"))
+        if (other.CompareTag("ScalerPart") || other.CompareTag("Scaler"))
         {
             scalerEntered(other);
         }
@@ -465,7 +474,7 @@ public class InteractableEditor : MonoBehaviour {
             rotatorExited(other);
         }
 
-        if (other.CompareTag("ScalerPart"))
+        if (other.CompareTag("ScalerPart") || other.CompareTag("Scaler"))
         {
             scalerExited(other);
         }

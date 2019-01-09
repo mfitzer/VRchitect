@@ -20,6 +20,8 @@ public class InputManager : MonoBehaviour {
     //Class Interactions
     public InteractableEditor interactableEditor;
 
+    #region RightController
+
     void rightTriggerClicked(object sender, ClickedEventArgs e)
     {
         interactableEditor.handleTriggerPulled();
@@ -89,6 +91,10 @@ public class InputManager : MonoBehaviour {
         interactableEditor.deselectInteractable();
     }
 
+    #endregion RightController
+
+    #region LeftController
+
     void leftTriggerClicked(object sender, ClickedEventArgs e)
     {
 
@@ -157,6 +163,8 @@ public class InputManager : MonoBehaviour {
     {
         
     }
+
+    #endregion LeftController
 
     public void triggerHapticFeedBack(bool left, ushort leftDuration, bool right, ushort rightDuration)
     {
