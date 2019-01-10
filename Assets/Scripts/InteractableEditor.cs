@@ -175,6 +175,7 @@ public class InteractableEditor : MonoBehaviour {
     {
         if (!transformEditorState.Equals(EditorState.editing))
         {
+            Debug.Log("Translator exited");
             transformEditorState = EditorState.idle;
             translatorReady = null;
             resetMaterials(translatorMaterials);
@@ -246,6 +247,7 @@ public class InteractableEditor : MonoBehaviour {
     {
         if (!transformEditorState.Equals(EditorState.editing))
         {
+            Debug.Log("Rotator exited");
             transformEditorState = EditorState.idle;
             rotatorReady = null;
             resetMaterials(rotatorMaterials);
@@ -256,80 +258,84 @@ public class InteractableEditor : MonoBehaviour {
 
     #region Scalers
 
-        //Handles the selection of a Scaler
-        void dragScaler()
+    //Handles the selection of a Scaler
+    void dragScaler()
+    {
+        if (!transformEditorState.Equals(EditorState.idle)) //A Scaler is colliding with the controller
         {
-            if (!transformEditorState.Equals(EditorState.idle)) //A Scaler is colliding with the controller
+
+            if (transformEditorState.Equals(EditorState.ready))
             {
                 transformEditorState = EditorState.editing; //Adjust editor state
                 editTypeActive = EditTracker.EditType.Scale; //Track type of edit being performed
                 activeScaler = scalerReady;
+            }
             
-                transformEditor.scale(transformTool, interactableEditing, activeScaler);
-            }
+            transformEditor.scale(transformTool, interactableEditing, activeScaler);
         }
+    }
 
-        //Handles the deselection of a Scaler
-        void releaseScaler()
+    //Handles the deselection of a Scaler
+    void releaseScaler()
+    {
+        if (transformEditorState.Equals(EditorState.editing))
         {
-            if (transformEditorState.Equals(EditorState.editing))
-            {
-                transformEditor.stopTransforming(transformTool, interactableEditing);
+            transformEditor.stopTransforming(transformTool, interactableEditing);
 
-                transformEditorState = EditorState.idle;
-                activeScaler = null;
+            transformEditorState = EditorState.idle;
+            activeScaler = null;
 
-                resetMaterials(scalerMaterials);
-            }
+            resetMaterials(scalerMaterials);
         }
+    }
 
-        //Handles when the controller enters a Rotator
-        void scalerEntered(Collider other)
+    //Handles when the controller enters a Scaler
+    void scalerEntered(Collider other)
+    {
+        if (!transformEditorState.Equals(EditorState.editing))
         {
-            if (!transformEditorState.Equals(EditorState.editing))
+            Scaler scaler;
+            if (other.CompareTag("Scaler"))
             {
-                Scaler scaler;
-                if (other.CompareTag("Scaler"))
-                {
-                    scaler = other.GetComponent<Scaler>();
-                }
-                else
-                {
-                    scaler = other.GetComponent<ScalerPart>().scaler;
-                }
+                scaler = other.GetComponent<Scaler>();
+            }
+            else
+            {
+                scaler = other.GetComponent<ScalerPart>().scaler;
+            }
 
-                editTypeReady = EditTracker.EditType.Scale; //Track type of edit that's ready
+            editTypeReady = EditTracker.EditType.Scale; //Track type of edit that's ready
 
-                if (transformEditorState.Equals(EditorState.idle))
+            if (transformEditorState.Equals(EditorState.idle))
+            {
+                transformEditorState = EditorState.ready;
+                scalerReady = scaler;
+
+                resetMaterials(scalerMaterials); //Reset materials of previous Scaler
+                setMaterialOfChildren(scaler.transform, scalerMaterials, highlightedTransformer);
+            }
+            else if (transformEditorState.Equals(EditorState.ready))
+            {
+                if (scalerReady != scaler) //New Scaler
                 {
-                    transformEditorState = EditorState.ready;
-                    scalerReady = scaler;
-
                     resetMaterials(scalerMaterials); //Reset materials of previous Scaler
-                    setMaterialOfChildren(scaler.transform, scalerMaterials, highlightedTransformer);
-                }
-                else if (transformEditorState.Equals(EditorState.ready))
-                {
-                    if (scalerReady != scaler) //New Scaler
-                    {
-                        resetMaterials(scalerMaterials); //Reset materials of previous Scaler
-                        setMaterialOfChildren(scaler.transform, scalerMaterials, highlightedTransformer); //Set material of active Scaler
-                        scalerReady = scaler;
-                    }
+                    setMaterialOfChildren(scaler.transform, scalerMaterials, highlightedTransformer); //Set material of active Scaler
+                    scalerReady = scaler;
                 }
             }
         }
+    }
 
-        //Handles when the controller exits a Rotator
-        void scalerExited(Collider other)
+    //Handles when the controller exits a Scaler
+    void scalerExited(Collider other)
+    {
+        if (!transformEditorState.Equals(EditorState.editing))
         {
-            if (!transformEditorState.Equals(EditorState.editing))
-            {
-                transformEditorState = EditorState.idle;
-                scalerReady = null;
-                resetMaterials(scalerMaterials);
-            }
+            transformEditorState = EditorState.idle;
+            scalerReady = null;
+            resetMaterials(scalerMaterials);
         }
+    }
 
     #endregion Scalers
 
@@ -340,7 +346,7 @@ public class InteractableEditor : MonoBehaviour {
     {
         Transform editedTransform = transformEditor.handleEditTrackerUndo();
 
-        if (interactableEditorState.Equals(EditorState.editing))
+        if (interactableEditorState.Equals(EditorState.editing) && editedTransform != null)
         {
             interactableEditing = editedTransform;
         }
@@ -351,7 +357,7 @@ public class InteractableEditor : MonoBehaviour {
     {
         Transform editedTransform = transformEditor.handleEditTrackerRedo();
 
-        if (interactableEditorState.Equals(EditorState.editing))
+        if (interactableEditorState.Equals(EditorState.editing) && editedTransform != null)
         {
             interactableEditing = editedTransform;
         }

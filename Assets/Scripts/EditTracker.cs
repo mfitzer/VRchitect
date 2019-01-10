@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class EditTracker : MonoBehaviour {
+public class EditTracker {
 
     public enum EditType { Translation, Rotation, Scale } //Indicates the type of an edit
 

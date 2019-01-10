@@ -33,6 +33,7 @@ public class TransformEditor : MonoBehaviour {
 
     //Scale
     Vector3 initialTransformEditingScale;
+    Vector3 posOffsetDirection;
 
     // Use this for initialization
     void Start()
@@ -156,29 +157,43 @@ public class TransformEditor : MonoBehaviour {
             initialTransformToolEditVector = transformTool.localScale;
 
             initialTransformEditingScale = transformEditing.localScale;
-
-            Vector3 transformEditingScale = transformEditing.localScale; //Store scale of transformEditing
+            initialPosition = transformEditing.localPosition;
+            
             transformEditing.localScale = Vector3.one; //Set the scale to 1 to avoid issues with InverseTransformPoint() being affected by scale
-            initialControllerPosition = transformEditing.InverseTransformPoint(transform.position);
-            transformEditing.localScale = transformEditingScale; //Reset the scale
+            initialControllerPosition = transformEditing.InverseTransformPoint(transform.position); //In local space
+            transformEditing.localScale = initialTransformEditingScale; //Reset the scale
 
             targetAxis = scaler.axis;
             targetAxisVector = getVectorForAxis(targetAxis);
             editType = EditTracker.EditType.Scale;
 
+            //Determine direction in which the position should be offset
+            switch (targetAxis)
+            {
+                case Axis.x:
+                    posOffsetDirection = transformEditing.right;
+                    break;
+                case Axis.y:
+                    posOffsetDirection = transformEditing.up;
+                    break;
+                case Axis.z:
+                    posOffsetDirection = transformEditing.forward;
+                    break;
+            }
+
             shouldTransform = true;
         }
         else //Ready to scale
         {
-            Vector3 transformEditingScale = transformEditing.localScale; //Store scale of transformEditing
             transformEditing.localScale = Vector3.one; //Set the scale to 1 to avoid issues with InverseTransformPoint() being affected by scale
 
             Vector3 localSpaceControllerPosition = transformEditing.InverseTransformPoint(transform.position); //The position of the controller in the local space of transformEditing
             float unitsToScale = 0f;
-            Vector3 newScale = transformEditingScale;
+            Vector3 newScale = initialTransformEditingScale;
 
             if (scaler.allAxisScaler) //Scale on all axes
             {
+                //NEED TO FIX THIS!! CAN'T CURRENTLY SCALE DOWN
                 unitsToScale = (localSpaceControllerPosition - initialControllerPosition).magnitude;
                 newScale = initialTransformEditingScale + Vector3.one * unitsToScale;
             }
@@ -198,6 +213,13 @@ public class TransformEditor : MonoBehaviour {
                 }
 
                 newScale = initialTransformEditingScale + targetAxisVector * unitsToScale;
+
+                //Offset position
+                Debug.Log("Target axis: " + targetAxis);
+                float unitsToTranslate = unitsToScale / 2;
+                Vector3 posOffset = unitsToTranslate * posOffsetDirection;
+                Vector3 newPosition = initialPosition + posOffset;
+                transformEditing.localPosition = newPosition;
             }
 
             transformEditing.localScale = newScale;
