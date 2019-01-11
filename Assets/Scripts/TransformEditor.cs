@@ -6,8 +6,7 @@ public class TransformEditor : MonoBehaviour {
 
     public enum Axis { x, y, z } //Indicates an axis on a transform
 
-    EditTracker transformEditingEditTracker; //Stores transformEditing edit information
-    EditTracker transformToolEditTracker; //Stores transformTool edit information
+    EditTracker editTracker; //Stores edit information
 
     Vector3 initialTransformEditingEditVector; //Initial vector value for transform edit
     Vector3 finalTransformEditingEditVector; //Final vector value for transformEditing
@@ -32,7 +31,6 @@ public class TransformEditor : MonoBehaviour {
 
     //Scale
     Scaler scaler;
-    Vector3 initialTransformEditingScale;
     Vector3 posOffsetDirection;
     Vector3 initialPositionEditVector;
     Vector3 finalPositionEditVector;
@@ -40,8 +38,7 @@ public class TransformEditor : MonoBehaviour {
     // Use this for initialization
     void Start()
     {
-        transformEditingEditTracker = new EditTracker();
-        transformToolEditTracker = new EditTracker();
+        editTracker = new EditTracker();
     }
 
     #region Translation
@@ -97,8 +94,6 @@ public class TransformEditor : MonoBehaviour {
             //Record final edit vectors for the EditTracker
             finalTransformEditingEditVector = transformEditing.position;
             finalTransformToolEditVector = transformTool.position;
-
-            Debug.Log("Translation on " + targetAxis + "-axis | Initial: " + initialControllerPosition + " | Current: " + localSpaceControllerPosition + " | Units: " + unitsToTranslate + " | translation: " + translation + " | new pos: " + transformEditing.position);
         }
     }
 
@@ -151,18 +146,18 @@ public class TransformEditor : MonoBehaviour {
 
     public void scale(Transform transformTool, Transform transformEditing, Scaler scaler)
     {
-        if (!shouldTransform) //Not ready to rotate, need to setup variables
+        if (!shouldTransform) //Not ready to scale, need to setup variables
         {
             initialTransformEditingEditVector = transformEditing.localScale;
             initialTransformToolEditVector = transformTool.localScale;
+            
+            initialPosition = transformEditing.localPosition; //Record initial position of transformEditing in local space
+            initialPositionEditVector = transformEditing.position; //Record initial edit vector (world space) for per-axis scaling position offset (used for Edit tracking)
 
-            initialTransformEditingScale = transformEditing.localScale;
-            initialPosition = transformEditing.localPosition;
-            initialPositionEditVector = transformEditing.position;
-
+            //Record initial position of controller in transformEditing's local space
             transformEditing.localScale = Vector3.one; //Set the scale to 1 to avoid issues with InverseTransformPoint() being affected by scale
             initialControllerPosition = transformEditing.InverseTransformPoint(transform.position); //In local space
-            transformEditing.localScale = initialTransformEditingScale; //Reset the scale
+            transformEditing.localScale = initialTransformEditingEditVector; //Reset the scale
 
             targetAxis = scaler.axis;
             targetAxisVector = getVectorForAxis(targetAxis);
@@ -191,13 +186,13 @@ public class TransformEditor : MonoBehaviour {
 
             Vector3 localSpaceControllerPosition = transformEditing.InverseTransformPoint(transform.position); //The position of the controller in the local space of transformEditing
             float unitsToScale = 0f;
-            Vector3 newScale = initialTransformEditingScale;
+            Vector3 newScale = initialTransformEditingEditVector;
 
             if (scaler.allAxisScaler) //Scale on all axes
             {
                 //NEED TO FIX THIS!! CAN'T CURRENTLY SCALE DOWN
                 unitsToScale = (localSpaceControllerPosition - initialControllerPosition).magnitude;
-                newScale = initialTransformEditingScale + Vector3.one * unitsToScale;
+                newScale = initialTransformEditingEditVector + Vector3.one * unitsToScale;
             }
             else //Scale on one axis
             {
@@ -214,16 +209,15 @@ public class TransformEditor : MonoBehaviour {
                         break;
                 }
 
-                newScale = initialTransformEditingScale + targetAxisVector * unitsToScale;
+                newScale = initialTransformEditingEditVector + targetAxisVector * unitsToScale; //Calculate the new scale for transformEditing
 
                 //Offset position
-                float unitsToTranslate = unitsToScale / 2;
-                Vector3 posOffset = unitsToTranslate * posOffsetDirection;
-                Vector3 newPosition = initialPosition + posOffset;
-                transformEditing.localPosition = newPosition;
+                float unitsToTranslate = unitsToScale / 2; //How many units to translate the transform to offset the position for the per-axis scaling operation
+                Vector3 posOffset = unitsToTranslate * posOffsetDirection; //Vector position offset for transformEditing
+                transformEditing.localPosition = initialPosition + posOffset;
 
                 //Record final edit vector for the EditTracker
-                finalPositionEditVector = transformEditing.position;
+                finalPositionEditVector = transformEditing.position; //World space position for edit tracking
             }
 
             transformEditing.localScale = newScale;
@@ -236,38 +230,6 @@ public class TransformEditor : MonoBehaviour {
 
     #endregion Scale
 
-    //Contrains a transform's movement to a specific axis
-    void constrainTransform(Transform transformToConstrain, Vector3 position, Vector3 rotation, Axis axis, Edit.EditType typeOfEdit)
-    {
-        Vector3 newPosition = position;
-        Vector3 newRotation = rotation;
-
-        switch (targetAxis) //Assuming this script goes on the controller, match position and rotation of controller on the specified axis
-        {
-            case Axis.x:
-                newPosition = new Vector3(transformToConstrain.position.x, position.y, position.z);
-                newRotation = new Vector3(transformToConstrain.rotation.eulerAngles.x, position.y, position.z);
-                break;
-            case Axis.y:
-                newPosition = new Vector3(position.x, transformToConstrain.position.y, position.z);
-                newRotation = new Vector3(position.x, transformToConstrain.rotation.eulerAngles.y, position.z);
-                break;
-            case Axis.z:
-                newPosition = new Vector3(position.x, initialPosition.y, transformToConstrain.position.z);
-                newRotation = new Vector3(position.x, initialPosition.y, transformToConstrain.rotation.eulerAngles.z);
-                break;
-        }
-
-        switch (typeOfEdit) //Determine type of edit being made
-        {
-            case Edit.EditType.Translation:
-                transformToConstrain.position = newPosition;
-                transformToConstrain.rotation = Quaternion.Euler(rotation);
-                finalTransformEditingEditVector = transformToConstrain.position; //Track position of transformEditing in case the transformation is done
-                break;
-        }
-    }
-
     //Sets a flag that indicates that transformation should stop
     public void stopTransforming(Transform transformTool, Transform transformEditing)
     {
@@ -276,22 +238,16 @@ public class TransformEditor : MonoBehaviour {
             shouldTransform = false;
 
             //Record transformEditing edit info
-            List<Edit> transformEditingEdits = new List<Edit>();
-            transformEditingEdits.Add(new Edit(editType, transformEditing, initialTransformEditingEditVector, finalTransformEditingEditVector)); //Transform editing
+            List<Edit> edits = new List<Edit>();
+            edits.Add(new Edit(editType, transformEditing, initialTransformEditingEditVector, finalTransformEditingEditVector)); //Transform editing
             if (editType.Equals(Edit.EditType.Scale) && !scaler.allAxisScaler) //Position is also edited
             {
-                transformEditingEdits.Add(new Edit(Edit.EditType.Translation, transformEditing, initialPositionEditVector, finalPositionEditVector)); //Transform editing position offset for per-axis scaling
+                edits.Add(new Edit(Edit.EditType.Translation, transformEditing, initialPositionEditVector, finalPositionEditVector)); //Transform editing position offset for per-axis scaling
             }
+            edits.Add(new Edit(editType, transformTool, initialTransformToolEditVector, finalTransformToolEditVector, true)); //Transform tool
 
-            EditGroup transformEditingEditGroup = new EditGroup(transformEditingEdits);
-            transformEditingEditTracker.trackEdits(transformEditingEditGroup);
-
-            //Record transformTool edit info
-            List<Edit> transformToolEdits = new List<Edit>();
-            transformToolEdits.Add(new Edit(editType, transformTool, initialTransformToolEditVector, finalTransformToolEditVector)); //Transform tool
-
-            EditGroup transformToolEditingEditGroup = new EditGroup(transformToolEdits);
-            transformToolEditTracker.trackEdits(transformToolEditingEditGroup);
+            EditGroup editGroup = new EditGroup(edits);
+            editTracker.trackEdits(editGroup);
         }
     }
 
@@ -329,8 +285,7 @@ public class TransformEditor : MonoBehaviour {
     //Handles the event of an undo edit event
     public Transform handleEditTrackerUndo()
     {
-        EditGroup editGroup = transformEditingEditTracker.undo();
-        transformToolEditTracker.undo();
+        EditGroup editGroup = editTracker.undo();
 
         if (editGroup != null)
         {
@@ -343,8 +298,7 @@ public class TransformEditor : MonoBehaviour {
     //Handles the event of an undo edit event
     public Transform handleEditTrackerRedo()
     {
-        EditGroup editGroup = transformEditingEditTracker.redo();
-        transformToolEditTracker.redo();
+        EditGroup editGroup = editTracker.redo();
 
         if (editGroup != null)
         {
