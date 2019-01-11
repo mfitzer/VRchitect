@@ -367,6 +367,7 @@ public class InteractableEditor : MonoBehaviour {
         resetMaterials(interactableMaterials);
         resetMaterials(translatorMaterials);
         resetMaterials(rotatorMaterials);
+        resetMaterials(scalerMaterials);
     }
 
     //Handles the event of the controller trigger being pulled
@@ -390,18 +391,30 @@ public class InteractableEditor : MonoBehaviour {
                 case (Edit.EditType.Translation):
                     if (transformEditorState.Equals(EditorState.ready) || editTypeActive.Equals(Edit.EditType.Translation)) //If not ready, that means transformEditorState == editing
                     {
+                        resetMaterials(interactableMaterials);
+                        resetMaterials(rotatorMaterials);
+                        resetMaterials(scalerMaterials);
+
                         dragTranslator();
                     }
                     break;
                 case (Edit.EditType.Rotation):
                     if (transformEditorState.Equals(EditorState.ready) || editTypeActive.Equals(Edit.EditType.Rotation)) //If not ready, that means transformEditorState == editing
                     {
+                        resetMaterials(interactableMaterials);
+                        resetMaterials(translatorMaterials);
+                        resetMaterials(scalerMaterials);
+
                         dragRotator();
                     }
                     break;
                 case (Edit.EditType.Scale):
                     if (transformEditorState.Equals(EditorState.ready) || editTypeActive.Equals(Edit.EditType.Scale)) //If not ready, that means transformEditorState == editing
                     {
+                        resetMaterials(interactableMaterials);
+                        resetMaterials(translatorMaterials);
+                        resetMaterials(rotatorMaterials);
+
                         dragScaler();
                     }
                     break;
