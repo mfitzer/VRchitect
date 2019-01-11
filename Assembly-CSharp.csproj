@@ -67,6 +67,8 @@
     <Compile Include="Assets\Imports\Vive-Teleporter\Scripts\TeleportVive.cs" />
     <Compile Include="Assets\Imports\Vive-Teleporter\Scripts\ViveNavMesh.cs" />
     <Compile Include="Assets\Imports\Vive-Teleporter\Scripts\ViveNavMeshEditor.cs" />
+    <Compile Include="Assets\Scripts\Edit.cs" />
+    <Compile Include="Assets\Scripts\EditGroup.cs" />
     <Compile Include="Assets\Scripts\EditTracker.cs" />
     <Compile Include="Assets\Scripts\InputManager.cs" />
     <Compile Include="Assets\Scripts\InteractableEditor.cs" />

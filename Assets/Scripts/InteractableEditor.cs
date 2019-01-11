@@ -8,8 +8,8 @@ public class InteractableEditor : MonoBehaviour {
     internal EditorState interactableEditorState = EditorState.idle;
     internal EditorState transformEditorState = EditorState.idle;
 
-    EditTracker.EditType editTypeReady; //Type of edit corresponding to the highlighted part of the transform tool
-    EditTracker.EditType editTypeActive; //Type of edit corresponding to the edit currently being performed
+    Edit.EditType editTypeReady; //Type of edit corresponding to the highlighted part of the transform tool
+    Edit.EditType editTypeActive; //Type of edit corresponding to the edit currently being performed
 
     //Interactables
     internal Transform interactableEditing;
@@ -120,7 +120,7 @@ public class InteractableEditor : MonoBehaviour {
             if (!transformEditorState.Equals(EditorState.editing))
             {
                 transformEditorState = EditorState.editing; //Adjust editor state
-                editTypeActive = EditTracker.EditType.Translation; //Track type of edit being performed
+                editTypeActive = Edit.EditType.Translation; //Track type of edit being performed
                 activeTranslator = translatorReady;
             }
 
@@ -148,7 +148,7 @@ public class InteractableEditor : MonoBehaviour {
         if (!transformEditorState.Equals(EditorState.editing))
         {
             Translator translator = other.GetComponent<TranslatorPart>().translator;
-            editTypeReady = EditTracker.EditType.Translation; //Track type of edit that's ready
+            editTypeReady = Edit.EditType.Translation; //Track type of edit that's ready
 
             if (transformEditorState.Equals(EditorState.idle))
             {
@@ -175,7 +175,6 @@ public class InteractableEditor : MonoBehaviour {
     {
         if (!transformEditorState.Equals(EditorState.editing))
         {
-            Debug.Log("Translator exited");
             transformEditorState = EditorState.idle;
             translatorReady = null;
             resetMaterials(translatorMaterials);
@@ -192,7 +191,7 @@ public class InteractableEditor : MonoBehaviour {
         if (!transformEditorState.Equals(EditorState.idle)) //A Rotator is colliding with the controller
         {
             transformEditorState = EditorState.editing; //Adjust editor state
-            editTypeActive = EditTracker.EditType.Rotation; //Track type of edit being performed
+            editTypeActive = Edit.EditType.Rotation; //Track type of edit being performed
             activeRotator = rotatorReady;
             
             transformEditor.rotate(transformTool, interactableEditing, activeRotator);
@@ -220,7 +219,7 @@ public class InteractableEditor : MonoBehaviour {
         if (!transformEditorState.Equals(EditorState.editing))
         {
             Rotator rotator = other.GetComponent<Rotator>();
-            editTypeReady = EditTracker.EditType.Rotation; //Track type of edit that's ready
+            editTypeReady = Edit.EditType.Rotation; //Track type of edit that's ready
 
             if (transformEditorState.Equals(EditorState.idle))
             {
@@ -247,7 +246,6 @@ public class InteractableEditor : MonoBehaviour {
     {
         if (!transformEditorState.Equals(EditorState.editing))
         {
-            Debug.Log("Rotator exited");
             transformEditorState = EditorState.idle;
             rotatorReady = null;
             resetMaterials(rotatorMaterials);
@@ -267,7 +265,7 @@ public class InteractableEditor : MonoBehaviour {
             if (transformEditorState.Equals(EditorState.ready))
             {
                 transformEditorState = EditorState.editing; //Adjust editor state
-                editTypeActive = EditTracker.EditType.Scale; //Track type of edit being performed
+                editTypeActive = Edit.EditType.Scale; //Track type of edit being performed
                 activeScaler = scalerReady;
             }
             
@@ -304,7 +302,7 @@ public class InteractableEditor : MonoBehaviour {
                 scaler = other.GetComponent<ScalerPart>().scaler;
             }
 
-            editTypeReady = EditTracker.EditType.Scale; //Track type of edit that's ready
+            editTypeReady = Edit.EditType.Scale; //Track type of edit that's ready
 
             if (transformEditorState.Equals(EditorState.idle))
             {
@@ -389,20 +387,20 @@ public class InteractableEditor : MonoBehaviour {
         {
             switch (editTypeReady)
             {
-                case (EditTracker.EditType.Translation):
-                    if (transformEditorState.Equals(EditorState.ready) || editTypeActive.Equals(EditTracker.EditType.Translation)) //If not ready, that means transformEditorState == editing
+                case (Edit.EditType.Translation):
+                    if (transformEditorState.Equals(EditorState.ready) || editTypeActive.Equals(Edit.EditType.Translation)) //If not ready, that means transformEditorState == editing
                     {
                         dragTranslator();
                     }
                     break;
-                case (EditTracker.EditType.Rotation):
-                    if (transformEditorState.Equals(EditorState.ready) || editTypeActive.Equals(EditTracker.EditType.Rotation)) //If not ready, that means transformEditorState == editing
+                case (Edit.EditType.Rotation):
+                    if (transformEditorState.Equals(EditorState.ready) || editTypeActive.Equals(Edit.EditType.Rotation)) //If not ready, that means transformEditorState == editing
                     {
                         dragRotator();
                     }
                     break;
-                case (EditTracker.EditType.Scale):
-                    if (transformEditorState.Equals(EditorState.ready) || editTypeActive.Equals(EditTracker.EditType.Scale)) //If not ready, that means transformEditorState == editing
+                case (Edit.EditType.Scale):
+                    if (transformEditorState.Equals(EditorState.ready) || editTypeActive.Equals(Edit.EditType.Scale)) //If not ready, that means transformEditorState == editing
                     {
                         dragScaler();
                     }
@@ -418,20 +416,20 @@ public class InteractableEditor : MonoBehaviour {
         {
             switch (editTypeReady)
             {
-                case (EditTracker.EditType.Translation):
-                    if (transformEditorState.Equals(EditorState.editing) && editTypeActive.Equals(EditTracker.EditType.Translation)) //If performing translation, release translator
+                case (Edit.EditType.Translation):
+                    if (transformEditorState.Equals(EditorState.editing) && editTypeActive.Equals(Edit.EditType.Translation)) //If performing translation, release translator
                     {
                         releaseTranslator();
                     }
                     break;
-                case (EditTracker.EditType.Rotation):
-                    if (transformEditorState.Equals(EditorState.editing) && editTypeActive.Equals(EditTracker.EditType.Rotation)) //If performing rotation, release rotator
+                case (Edit.EditType.Rotation):
+                    if (transformEditorState.Equals(EditorState.editing) && editTypeActive.Equals(Edit.EditType.Rotation)) //If performing rotation, release rotator
                     {
                         releaseRotator();
                     }
                     break;
-                case (EditTracker.EditType.Scale):
-                    if (transformEditorState.Equals(EditorState.editing) && editTypeActive.Equals(EditTracker.EditType.Scale)) //If performing scale, release scaler
+                case (Edit.EditType.Scale):
+                    if (transformEditorState.Equals(EditorState.editing) && editTypeActive.Equals(Edit.EditType.Scale)) //If performing scale, release scaler
                     {
                         releaseScaler();
                     }
