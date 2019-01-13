@@ -368,6 +368,20 @@ public class InteractableEditor : MonoBehaviour {
         resetMaterials(translatorMaterials);
         resetMaterials(rotatorMaterials);
         resetMaterials(scalerMaterials);
+
+        //Stop editing something if edit is active when teleporting
+        switch (editTypeActive)
+        {
+            case Edit.EditType.Translation:
+                releaseTranslator();
+                break;
+            case Edit.EditType.Rotation:
+                releaseRotator();
+                break;
+            case Edit.EditType.Scale:
+                releaseScaler();
+                break;
+        }
     }
 
     //Handles the event of the controller trigger being pulled
