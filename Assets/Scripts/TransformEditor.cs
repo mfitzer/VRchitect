@@ -195,12 +195,7 @@ public class TransformEditor : MonoBehaviour {
 
             if (scaler.allAxisScaler) //Scale on all axes
             {
-                //NEED TO FIX THIS!! CAN'T CURRENTLY SCALE DOWN
-                //Determine what octant controller is in in relation to transform tool, then scale down when the controller is in the opposite octant(s)
-                Vector3 posVector = localSpaceControllerPosition - initialControllerPosition;
-                float unitModifier = calculateUnitsModifier(transform.position - initialWorldControllerPosition); //Used to adjust between scaling up and scaling down (positive or negative units)
-
-                unitsToScale = posVector.magnitude * unitModifier;
+                unitsToScale = transform.position.y - initialWorldControllerPosition.y;
                 newScale = initialTransformEditingEditVector + Vector3.one * unitsToScale;
             }
             else //Scale on one axis
@@ -237,6 +232,7 @@ public class TransformEditor : MonoBehaviour {
         }
     }
 
+    
     //Determines if units to scale for uniform scaling should be negative or positive based on the quadrant its in
     float calculateUnitsModifier(Vector3 positionVector)
     {
@@ -329,6 +325,7 @@ public class TransformEditor : MonoBehaviour {
         return positionLookingAt - origin;
     }
 
+    //NOT USED
     //Returns the octant in which a Vector3 is located in a 3D coordinate system
     Octant getOctant(Vector3 positionVector)
     {
