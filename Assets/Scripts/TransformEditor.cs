@@ -6,6 +6,8 @@ public class TransformEditor : MonoBehaviour {
 
     public enum Axis { x, y, z } //Indicates an axis on a transform
 
+    enum Octant { I, II, III, IV, V, VI, VII, VIII } //Specifies an octant in a 3d coordinate system
+
     EditTracker editTracker; //Stores edit information
 
     Vector3 initialTransformEditingEditVector; //Initial vector value for transform edit
@@ -34,6 +36,7 @@ public class TransformEditor : MonoBehaviour {
     Vector3 posOffsetDirection;
     Vector3 initialPositionEditVector;
     Vector3 finalPositionEditVector;
+    Vector3 initialWorldControllerPosition;
 
     // Use this for initialization
     void Start()
@@ -159,6 +162,8 @@ public class TransformEditor : MonoBehaviour {
             initialControllerPosition = transformEditing.InverseTransformPoint(transform.position); //In local space
             transformEditing.localScale = initialTransformEditingEditVector; //Reset the scale
 
+            initialWorldControllerPosition = transform.position;
+
             targetAxis = scaler.axis;
             targetAxisVector = getVectorForAxis(targetAxis);
             editType = Edit.EditType.Scale;
@@ -191,7 +196,11 @@ public class TransformEditor : MonoBehaviour {
             if (scaler.allAxisScaler) //Scale on all axes
             {
                 //NEED TO FIX THIS!! CAN'T CURRENTLY SCALE DOWN
-                unitsToScale = (localSpaceControllerPosition - initialControllerPosition).magnitude;
+                //Determine what octant controller is in in relation to transform tool, then scale down when the controller is in the opposite octant(s)
+                Vector3 posVector = localSpaceControllerPosition - initialControllerPosition;
+                float unitModifier = calculateUnitsModifier(transform.position - initialWorldControllerPosition); //Used to adjust between scaling up and scaling down (positive or negative units)
+
+                unitsToScale = posVector.magnitude * unitModifier;
                 newScale = initialTransformEditingEditVector + Vector3.one * unitsToScale;
             }
             else //Scale on one axis
@@ -226,6 +235,48 @@ public class TransformEditor : MonoBehaviour {
             finalTransformEditingEditVector = transformEditing.localScale;
             finalTransformToolEditVector = transformTool.localScale;
         }
+    }
+
+    //Determines if units to scale for uniform scaling should be negative or positive based on the quadrant its in
+    float calculateUnitsModifier(Vector3 positionVector)
+    {
+        float unitModifier;
+
+        Octant octant = getOctant(positionVector);
+        Debug.Log(positionVector + " Octant: " + octant);
+
+        switch (octant)
+        {
+            case Octant.I:
+                unitModifier = 1f;
+                break;
+            case Octant.II:
+                unitModifier = 1f;
+                break;
+            case Octant.III:
+                unitModifier = 1f;
+                break;
+            case Octant.IV:
+                unitModifier = 1f;
+                break;
+            case Octant.V:
+                unitModifier = -1f;
+                break;
+            case Octant.VI:
+                unitModifier = -1f;
+                break;
+            case Octant.VII:
+                unitModifier = -1f;
+                break;
+            case Octant.VIII:
+                unitModifier = -1f;
+                break;
+            default:
+                unitModifier = 1f;
+                break;
+        }
+
+        return unitModifier;
     }
 
     #endregion Scale
@@ -276,6 +327,70 @@ public class TransformEditor : MonoBehaviour {
         }
 
         return positionLookingAt - origin;
+    }
+
+    //Returns the octant in which a Vector3 is located in a 3D coordinate system
+    Octant getOctant(Vector3 positionVector)
+    {
+        Octant octant;
+
+        float x = positionVector.x;
+        float y = positionVector.y;
+        float z = positionVector.z;
+
+        if (x < 0)
+        {
+            if (y < 0)
+            {
+                if (z < 0) // -, -, -
+                {
+                    octant = Octant.VII;
+                }
+                else // -, -, +
+                {
+                    octant = Octant.III;
+                }
+            }
+            else
+            {
+                if (z < 0) // -, +, -
+                {
+                    octant = Octant.VI;
+                }
+                else // -, +, +
+                {
+                    octant = Octant.II;
+                }
+            }
+        }
+        else
+        {
+            if (y < 0)
+            {
+                if (z < 0) // +, -, -
+                {
+                    octant = Octant.VIII;
+                }
+                else // +, -, +
+                {
+                    octant = Octant.IV;
+                }
+            }
+            else
+            {
+                if (z < 0) // +, +, -
+                {
+                    octant = Octant.V;
+                }
+                else // +, +, +
+                {
+                    octant = Octant.I;
+                }
+            }
+        }
+        
+
+        return octant;
     }
 
     #endregion Helpers
