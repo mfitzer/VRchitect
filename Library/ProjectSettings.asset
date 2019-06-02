@@ -683,7 +683,7 @@ PlayerSettings:
   facebookStatus: 1
   facebookXfbml: 0
   facebookFrictionlessRequests: 1
-  apiCompatibilityLevel: 2
+  apiCompatibilityLevel: 6
   cloudProjectId: 5d45b89e-8491-4fd5-8f00-1dbf1d91a8d7
   framebufferDepthMemorylessMode: 0
   projectName: VRchitect

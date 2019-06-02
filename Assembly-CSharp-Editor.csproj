@@ -362,9 +362,6 @@
     <Reference Include="ProBuilderEditor">
       <HintPath>D:/Documents/UnityProjects/VRchitect/VRchitect/Library/PackageCache/com.unity.probuilder@3.0.9/ProBuilder/Editor/ProBuilderEditor.dll</HintPath>
     </Reference>
-    <Reference Include="UnityEngine.Purchasing">
-      <HintPath>D:/Documents/UnityProjects/VRchitect/VRchitect/Library/PackageCache/com.unity.purchasing@2.0.6/UnityEngine.Purchasing.dll</HintPath>
-    </Reference>
     <Reference Include="UnityEditor.Purchasing">
       <HintPath>D:/Documents/UnityProjects/VRchitect/VRchitect/Library/PackageCache/com.unity.purchasing@2.0.6/Editor/UnityEditor.Purchasing.dll</HintPath>
     </Reference>

@@ -4,10 +4,26 @@ using UnityEngine;
 using UnityEngine.AI;
 
 public class ModelInitializer : MonoBehaviour {
+
+    private static ModelInitializer instance;
+    public static ModelInitializer Instance
+    {
+        get
+        {
+            if (instance == null)
+                instance = FindObjectOfType<ModelInitializer>();
+            return instance;
+        }
+    }
+
     public Transform model;
+
+    public string modelParentTag { get; private set; }
 
 	// Use this for initialization
 	void Start () {
+        modelParentTag = "ModelParent";
+
         intializeModel(model);
 	}
 
@@ -15,7 +31,7 @@ public class ModelInitializer : MonoBehaviour {
     public void intializeModel(Transform parentTransform)
     {
         Transform parent = parentTransform;
-        parent.tag = "ModelParent";
+        parent.tag = modelParentTag;
 
         foreach (Transform child in parent)
         {

@@ -68,18 +68,25 @@
     <Compile Include="Assets\Imports\Vive-Teleporter\Scripts\TeleportVive.cs" />
     <Compile Include="Assets\Imports\Vive-Teleporter\Scripts\ViveNavMesh.cs" />
     <Compile Include="Assets\Imports\Vive-Teleporter\Scripts\ViveNavMeshEditor.cs" />
-    <Compile Include="Assets\Scripts\Edit.cs" />
-    <Compile Include="Assets\Scripts\EditGroup.cs" />
+    <Compile Include="Assets\Scripts\Edits\CompoundEdit.cs" />
+    <Compile Include="Assets\Scripts\Edits\Edit.cs" />
+    <Compile Include="Assets\Scripts\Edits\RotationEdit.cs" />
+    <Compile Include="Assets\Scripts\Edits\ScaleEdit.cs" />
+    <Compile Include="Assets\Scripts\Edits\TransformationEdit.cs" />
+    <Compile Include="Assets\Scripts\Edits\TranslationEdit.cs" />
     <Compile Include="Assets\Scripts\EditTracker.cs" />
+    <Compile Include="Assets\Scripts\Helpers.cs" />
     <Compile Include="Assets\Scripts\InputManager.cs" />
     <Compile Include="Assets\Scripts\InteractableEditor.cs" />
     <Compile Include="Assets\Scripts\ModelInitializer.cs" />
-    <Compile Include="Assets\Scripts\Rotator.cs" />
-    <Compile Include="Assets\Scripts\Scaler.cs" />
-    <Compile Include="Assets\Scripts\ScalerPart.cs" />
     <Compile Include="Assets\Scripts\TransformEditor.cs" />
-    <Compile Include="Assets\Scripts\Translator.cs" />
-    <Compile Include="Assets\Scripts\TranslatorPart.cs" />
+    <Compile Include="Assets\Scripts\Transformers\AllAxisScaler.cs" />
+    <Compile Include="Assets\Scripts\Transformers\Rotator.cs" />
+    <Compile Include="Assets\Scripts\Transformers\SingleAxisScaler.cs" />
+    <Compile Include="Assets\Scripts\Transformers\Transformer.cs" />
+    <Compile Include="Assets\Scripts\Transformers\TransformerPart.cs" />
+    <Compile Include="Assets\Scripts\Transformers\Translator.cs" />
+    <Compile Include="Assets\Scripts\TransformTool.cs" />
     <Compile Include="Assets\SteamVR\Extras\SteamVR_GazeTracker.cs" />
     <Compile Include="Assets\SteamVR\Extras\SteamVR_LaserPointer.cs" />
     <Compile Include="Assets\SteamVR\Extras\SteamVR_Teleporter.cs" />
@@ -387,9 +394,6 @@
     </Reference>
     <Reference Include="Poly2Tri">
       <HintPath>D:/Documents/UnityProjects/VRchitect/VRchitect/Library/PackageCache/com.unity.probuilder@3.0.9/ProBuilder/Classes/ClassesLib/Poly2Tri.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.Purchasing">
-      <HintPath>D:/Documents/UnityProjects/VRchitect/VRchitect/Library/PackageCache/com.unity.purchasing@2.0.6/UnityEngine.Purchasing.dll</HintPath>
     </Reference>
     <Reference Include="netstandard">
       <HintPath>D:/Unity/Editors/2019.1.3f1/Editor/Data/NetStandard/ref/2.0.0/netstandard.dll</HintPath>

@@ -4,28 +4,37 @@ using UnityEngine;
 
 public class EditTracker {
 
-    public enum EditAction { Undo, Redo}
-
-    Stack<EditGroup> pastEdits = new Stack<EditGroup>(); //Edits that can be undone from the current edit
-    Stack<EditGroup> futureEdits = new Stack<EditGroup>(); //Edits that can be redone from the current edit
-
-    //Stores EditGroup information
-    public void trackEdits(EditGroup editGroup)
+    private static EditTracker instance;
+    public static EditTracker Instance
     {
-        pastEdits.Push(editGroup);
+        get
+        {
+            if (instance == null)
+                instance = new EditTracker();
+            return instance;
+        }
+    }
+
+    Stack<Edit> pastEdits = new Stack<Edit>(); //Edits that can be undone from the current edit
+    Stack<Edit> futureEdits = new Stack<Edit>(); //Edits that can be redone from the current edit
+
+    //Stores Edit information
+    public void trackEdit(Edit edit)
+    {
+        pastEdits.Push(edit);
         futureEdits.Clear();
     }
 
     //Goes back one edit in pastEdits (Returns true if an edit was undone, false otherwise)
-    public EditGroup undo()
+    public Edit undo()
     {
         if (pastEdits.Count > 0) //There are edits to undo
         {
-            EditGroup editGroup = pastEdits.Pop();
-            editGroup.performEdits(EditAction.Undo);
-            futureEdits.Push(editGroup); //Make edit available for redoing
+            Edit edit = pastEdits.Pop();
+            edit.undo(); //Undo the edit
+            futureEdits.Push(edit); //Make edit available for redoing
 
-            return editGroup;
+            return edit;
         }
         else
         {
@@ -34,15 +43,15 @@ public class EditTracker {
     }
 
     //Goes forward one edit in futureEdits (Returns true if an edit was redone, false otherwise)
-    public EditGroup redo()
+    public Edit redo()
     {
         if (futureEdits.Count > 0) //There are edits to redo
         {
-            EditGroup editGroup = futureEdits.Pop(); //Get the next edit
-            editGroup.performEdits(EditAction.Redo);
-            pastEdits.Push(editGroup); //Make edit available for redoing
+            Edit edit = futureEdits.Pop(); //Get the next edit
+            edit.redo(); //Redo the edit
+            pastEdits.Push(edit); //Make edit available for redoing
 
-            return editGroup;
+            return edit;
         }
         else
         {
